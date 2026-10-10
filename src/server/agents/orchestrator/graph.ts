@@ -840,7 +840,8 @@ async function runDocumentProcessorChunk(
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
       
-      const response = await fetch("http://localhost:8000/extract", {
+      const ocrUrl = process.env.OCR_SERVICE_URL || "http://localhost:8000/extract";
+      const response = await fetch(ocrUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image_base64: base64Page }),
