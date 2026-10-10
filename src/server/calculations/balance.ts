@@ -39,33 +39,44 @@ export async function computeTrialBalance(
     companyId,
   };
 
-  const lines = await prisma.journalEntryLine.findMany({
+  const groupedLines = await prisma.journalEntryLine.groupBy({
+    by: ["accountCode", "companyId"],
     where: whereClause,
-    include: { account: true },
+    _sum: {
+      debit: true,
+      credit: true,
+    },
   });
+
+  // Fetch account details for the grouped codes
+  const accountCodes = groupedLines.map((g) => g.accountCode);
+  const accountsData = await prisma.account.findMany({
+    where: { companyId, code: { in: accountCodes } },
+    select: { code: true, label: true, classNumber: true },
+  });
+  
+  const accountMap = new Map(accountsData.map((a) => [a.code, a]));
 
   const balanceMap = new Map<string, AccountBalance>();
 
-  for (const line of lines) {
-    const key = line.accountCode;
-    const existing = balanceMap.get(key) || {
-      accountCode: line.accountCode,
-      accountLabel: line.account.label,
-      classNumber: line.account.classNumber,
-      totalDebit: new Decimal(0),
-      totalCredit: new Decimal(0),
-      soldeDebit: new Decimal(0),
-      soldeCredit: new Decimal(0),
-    };
+  for (const group of groupedLines) {
+    const account = accountMap.get(group.accountCode);
+    if (!account) continue;
 
-    existing.totalDebit = existing.totalDebit.plus(line.debit.toString());
-    existing.totalCredit = existing.totalCredit.plus(line.credit.toString());
+    const key = group.accountCode;
+    const totalDebit = new Decimal(group._sum.debit?.toString() || 0);
+    const totalCredit = new Decimal(group._sum.credit?.toString() || 0);
+    const solde = totalDebit.minus(totalCredit);
 
-    const solde = existing.totalDebit.minus(existing.totalCredit);
-    existing.soldeDebit = solde.gt(0) ? solde : new Decimal(0);
-    existing.soldeCredit = solde.lt(0) ? solde.abs() : new Decimal(0);
-
-    balanceMap.set(key, existing);
+    balanceMap.set(key, {
+      accountCode: key,
+      accountLabel: account.label,
+      classNumber: account.classNumber,
+      totalDebit,
+      totalCredit,
+      soldeDebit: solde.gt(0) ? solde : new Decimal(0),
+      soldeCredit: solde.lt(0) ? solde.abs() : new Decimal(0),
+    });
   }
 
   const accounts = Array.from(balanceMap.values()).sort((a, b) =>
