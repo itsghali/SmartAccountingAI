@@ -79,6 +79,7 @@ services:
       - GROQ_MODEL=${GROQ_MODEL:-openai/gpt-oss-120b}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OCR_SERVICE_URL=http://ocr-service:8000/extract
       - UPSTASH_REDIS_REST_URL=http://redis-http-proxy:80
       - UPSTASH_REDIS_REST_TOKEN=supersecret_redis_token
       - NODE_ENV=production
@@ -87,6 +88,24 @@ services:
         condition: service_healthy
       redis-http-proxy:
         condition: service_started
+      ocr-service:
+        condition: service_started
+
+  ocr-service:
+    build:
+      context: ./services/ocr-service
+      dockerfile: Dockerfile
+    container_name: smartaccountingai-ocr-prod
+    restart: always
+    networks:
+      - backend_net
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+    ports:
+      - "8000:8000"
 
   postgres-backup:
     image: prodrigestivill/postgres-backup-local:15

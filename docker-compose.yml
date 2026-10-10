@@ -38,10 +38,22 @@ services:
       - GROQ_MODEL=${GROQ_MODEL:-openai/gpt-oss-120b}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OCR_SERVICE_URL=http://ocr-service:8000/extract
     depends_on:
       postgres:
         condition: service_healthy
+      ocr-service:
+        condition: service_started
     command: npm run dev -- -H 0.0.0.0
+
+  ocr-service:
+    build:
+      context: ./services/ocr-service
+      dockerfile: Dockerfile
+    container_name: smartaccountingai-ocr
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
 
 volumes:
   postgres_data:
