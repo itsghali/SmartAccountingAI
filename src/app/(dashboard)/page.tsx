@@ -24,6 +24,7 @@ import {
   Calculator,
   Users,
   Building2,
+  PieChart as PieChartIcon,
 } from "lucide-react";
 
 interface DashboardData {
@@ -184,41 +185,75 @@ export default function DashboardPage() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Monthly Revenue vs Expenses Bar Chart */}
-        <Card className="bg-card/60 backdrop-blur-md border-border/50 shadow-sm hover:shadow-md transition-all duration-300">
+        <Card className="bg-card/40 backdrop-blur-2xl border-white/10 shadow-2xl hover:shadow-primary/5 transition-all duration-500 overflow-hidden relative group">
+          <div className="absolute inset-0 bg-linear-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
           <CardHeader>
-            <CardTitle className="text-base">
+            <CardTitle className="text-lg font-medium text-foreground/80 flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
               Chiffre d{"'"}Affaires vs Charges par Mois
             </CardTitle>
           </CardHeader>
           <CardContent>
             {monthlyData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" fontSize={12} />
-                  <YAxis fontSize={12} tickFormatter={(v) => formatMAD(v)} />
-                  <Tooltip
-                    formatter={(value) => [
-                      `${formatMAD(Number(value))} MAD`,
-                    ]}
+              <ResponsiveContainer width="100%" height={320}>
+                <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.2}/>
+                    </linearGradient>
+                    <linearGradient id="colorExpenses" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0.2}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" strokeOpacity={0.05} />
+                  <XAxis 
+                    dataKey="month" 
+                    fontSize={12} 
+                    tickLine={false} 
+                    axisLine={false}
+                    tick={{ fill: "currentColor", opacity: 0.6 }}
+                    dy={10}
                   />
-                  <Legend />
+                  <YAxis 
+                    fontSize={12} 
+                    tickFormatter={(v) => formatMAD(Number(v))} 
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: "currentColor", opacity: 0.6 }}
+                  />
+                  <Tooltip
+                    cursor={{ fill: "currentColor", opacity: 0.05 }}
+                    contentStyle={{ 
+                      backgroundColor: "rgba(var(--background), 0.8)", 
+                      backdropFilter: "blur(12px)",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: "12px",
+                      boxShadow: "0 10px 40px -10px rgba(0,0,0,0.3)"
+                    }}
+                    itemStyle={{ fontWeight: 500 }}
+                    formatter={(value: any) => [`${formatMAD(Number(value))} MAD`]}
+                  />
+                  <Legend wrapperStyle={{ paddingTop: "20px", opacity: 0.8, fontSize: "13px" }} />
                   <Bar
                     dataKey="revenue"
                     name="Chiffre d'Affaires"
-                    fill="#10b981"
-                    radius={[4, 4, 0, 0]}
+                    fill="url(#colorRevenue)"
+                    radius={[6, 6, 0, 0]}
+                    maxBarSize={40}
                   />
                   <Bar
                     dataKey="expenses"
                     name="Charges"
-                    fill="#ef4444"
-                    radius={[4, 4, 0, 0]}
+                    fill="url(#colorExpenses)"
+                    radius={[6, 6, 0, 0]}
+                    maxBarSize={40}
                   />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-center text-gray-400 py-12">
+              <p className="text-center text-muted-foreground py-12">
                 Aucune donnée mensuelle disponible
               </p>
             )}
@@ -226,46 +261,71 @@ export default function DashboardPage() {
         </Card>
 
         {/* Expense Breakdown Donut Chart */}
-        <Card className="bg-card/60 backdrop-blur-md border-border/50 shadow-sm hover:shadow-md transition-all duration-300">
+        <Card className="bg-card/40 backdrop-blur-2xl border-white/10 shadow-2xl hover:shadow-primary/5 transition-all duration-500 overflow-hidden relative group">
+          <div className="absolute inset-0 bg-linear-to-bl from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
           <CardHeader>
-            <CardTitle className="text-base">
+            <CardTitle className="text-lg font-medium text-foreground/80 flex items-center gap-2">
+              <PieChartIcon className="h-5 w-5 text-purple-500" />
               Répartition des Charges
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex items-center justify-center">
             {expenseCategories.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={320}>
                 <PieChart>
+                  <defs>
+                    {expenseCategories.map((_, index) => (
+                      <linearGradient key={`grad-${index}`} id={`grad-${index}`} x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor={DONUT_COLORS[index % DONUT_COLORS.length]} stopOpacity={1} />
+                        <stop offset="100%" stopColor={DONUT_COLORS[index % DONUT_COLORS.length]} stopOpacity={0.6} />
+                      </linearGradient>
+                    ))}
+                  </defs>
                   <Pie
                     data={expenseCategories}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={3}
+                    innerRadius={80}
+                    outerRadius={110}
+                    paddingAngle={4}
+                    stroke="none"
                     dataKey="value"
                     nameKey="name"
-                    label={({ name, percent }) =>
-                      `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`
-                    }
-                    labelLine
+                    cornerRadius={8}
                   >
                     {expenseCategories.map((_, index) => (
                       <Cell
                         key={`cell-${index}`}
-                        fill={DONUT_COLORS[index % DONUT_COLORS.length]}
+                        fill={`url(#grad-${index})`}
+                        style={{ filter: "drop-shadow(0px 4px 6px rgba(0,0,0,0.1))" }}
                       />
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value) => [
+                    contentStyle={{ 
+                      backgroundColor: "rgba(var(--background), 0.8)", 
+                      backdropFilter: "blur(12px)",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: "12px",
+                      boxShadow: "0 10px 40px -10px rgba(0,0,0,0.3)"
+                    }}
+                    itemStyle={{ fontWeight: 500, color: "inherit" }}
+                    formatter={(value: any, name: any, props: any) => [
                       `${formatMAD(Number(value))} MAD`,
+                      `${name} (${((props.payload.percent ?? 0) * 100).toFixed(1)}%)`
                     ]}
+                  />
+                  <Legend 
+                    layout="vertical" 
+                    verticalAlign="middle" 
+                    align="right"
+                    wrapperStyle={{ opacity: 0.8, fontSize: "13px", paddingLeft: "20px" }}
+                    iconType="circle"
                   />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-center text-gray-400 py-12">
+              <p className="text-center text-muted-foreground py-12">
                 Aucune charge enregistrée
               </p>
             )}
