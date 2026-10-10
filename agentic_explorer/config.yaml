@@ -1,0 +1,10 @@
+app_name: SmartAccountingAI
+approved_targets:
+  - "http://localhost:3000"
+  - "http://127.0.0.1:3000"
+
+selectors:
+  login:
+    email_input: "input[name='email']"
+    password_input: "input[name='password']"
+    submit_button: "button[type='submit']"
