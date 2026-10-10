@@ -34,6 +34,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { AIAgentBanner } from "@/components/ui/ai-agent-banner";
+
 
 type Severity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
@@ -1129,29 +1131,11 @@ export default function ClosingPage() {
           </Card>
         </>
       ) : (
-        <Card className="bg-muted/40">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-4">
-              <ShieldCheck className="h-8 w-8 shrink-0 text-primary" />
-              <div className="space-y-2">
-                <h3 className="font-semibold">
-                  Agent 5 - Closing & Reporting
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Cet agent prepare la cloture a partir de l&apos;etat du
-                  grand livre, des open items et des signaux de reporting deja
-                  disponibles dans la plateforme.
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Il remonte des checks de coherence, des prompts de
-                  rapprochement et des brouillons de rapports, mais aucune
-                  ecriture de cloture n&apos;est engagee sans approbation
-                  humaine.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <AIAgentBanner 
+          title="Assistant de Clôture & Reporting"
+          description="Je prépare la clôture comptable en analysant le grand livre, les soldes ouverts et les signaux de reporting. Je vous propose des vérifications de cohérence, des écritures d'inventaire et des rapports préliminaires pour faciliter votre travail de clôture, sans jamais prendre de décision seul."
+          capabilities={["Contrôles de cohérence", "Préparation de clôture", "Brouillons de rapports"]}
+        />
       )}
 
       {/* Duplication N-1 */}

@@ -27,6 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { AIAgentBanner } from "@/components/ui/ai-agent-banner";
 
 type Severity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
@@ -782,27 +783,11 @@ export default function AuditPage() {
           </Card>
         </>
       ) : (
-        <Card className="bg-muted/40">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-4">
-              <ShieldAlert className="h-8 w-8 shrink-0 text-primary" />
-              <div className="space-y-2">
-                <h3 className="font-semibold">
-                  Agent 6 - Audit, Control & Compliance
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Cet agent analyse l&apos;historique transactionnel, les
-                  signaux de workflow et les comportements utilisateurs pour
-                  aider les auditeurs a cibler leurs investigations.
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Il reste strictement en lecture seule, ne modifie aucune
-                  donnee et ne prend jamais de decision autonome.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <AIAgentBanner 
+          title="Assistant d'Audit & Conformité"
+          description="Je surveille en permanence votre grand livre pour identifier les anomalies ou les risques de conformité avant qu'ils ne deviennent des problèmes. Je reste strictement en lecture seule et ne modifie jamais vos données sans votre accord."
+          capabilities={["Détection d'anomalies", "Contrôle continu", "Analyse des risques"]}
+        />
       )}
 
       <Card>

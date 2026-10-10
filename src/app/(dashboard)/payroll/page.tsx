@@ -25,6 +25,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { AIAgentBanner } from "@/components/ui/ai-agent-banner";
+
 
 interface PayrollSuggestion {
   type: string;
@@ -398,32 +400,11 @@ export default function PayrollPage() {
 
       {/* Info Card */}
       {!analysisResult && !analyzeMutation.isPending && (
-        <Card className="bg-primary/5 border-primary/20 backdrop-blur-md shadow-sm">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-primary/10 rounded-full shrink-0">
-                <Users className="h-6 w-6 text-primary" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="font-semibold text-foreground text-lg">Agent 4 — Payroll Support</h3>
-                <p className="text-sm text-muted-foreground">
-                  Cet agent assiste la préparation de la paie en détectant les anomalies
-                  et exceptions sans effectuer les calculs finaux. Il analyse :
-                </p>
-                <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1.5 ml-1">
-                  <li>Variations de salaire anormales</li>
-                  <li>Heures supplémentaires inhabituelles</li>
-                  <li>Écarts de net à payer par rapport aux périodes précédentes</li>
-                  <li>Incohérences dans les cotisations (CNSS, AMO, IGR)</li>
-                  <li>Données manquantes ou duplications</li>
-                </ul>
-                <p className="text-sm text-muted-foreground mt-4 font-medium border-t border-primary/10 pt-3">
-                  Les calculs de paie officiels restent sous le contrôle du moteur déterministe.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <AIAgentBanner 
+          title="Assistant de Paie & Conformité"
+          description="J'assiste la préparation de la paie en détectant les anomalies et exceptions. J'analyse les variations de salaire, les heures supplémentaires et les écarts de net à payer par rapport aux périodes précédentes. Les calculs finaux restent toujours sous le contrôle du moteur déterministe."
+          capabilities={["Détection d'écarts de paie", "Analyse des cotisations", "Vérification des doublons"]}
+        />
       )}
     </div>
   );
