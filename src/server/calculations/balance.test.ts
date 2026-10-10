@@ -28,6 +28,7 @@ describe("Trial Balance Calculations", () => {
         companyId: "company-1",
         _sum: { debit: new Decimal(0), credit: new Decimal(800) },
       },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ] as any;
     
     vi.mocked(prisma.journalEntryLine.groupBy).mockResolvedValue(mockGrouped);
@@ -36,6 +37,7 @@ describe("Trial Balance Calculations", () => {
     vi.mocked(prisma.account.findMany).mockResolvedValue([
       { code: "5141", label: "Banque", classNumber: 5 },
       { code: "7111", label: "Ventes de marchandises", classNumber: 7 },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ] as any);
 
     const result = await computeTrialBalance("company-1", "fiscal-year-1");
