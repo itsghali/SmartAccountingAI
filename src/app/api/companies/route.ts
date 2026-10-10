@@ -23,11 +23,19 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const activeOnly = searchParams.get("active") !== "false";
 
+    const whereClause: Prisma.CompanyWhereInput = {
+      organizationId: session.user.organizationId,
+      ...(activeOnly ? { isActive: true } : {}),
+    };
+
+    if (session.user.role !== "SUPER_ADMIN") {
+      whereClause.userCompanyAccess = {
+        some: { userId: session.user.id },
+      };
+    }
+
     const companies = await prisma.company.findMany({
-      where: {
-        organizationId: session.user.organizationId,
-        ...(activeOnly ? { isActive: true } : {}),
-      },
+      where: whereClause,
       include: {
         _count: {
           select: { fiscalYears: true, journals: true },
@@ -51,6 +59,10 @@ export async function POST(request: NextRequest) {
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (session.user.role !== "SUPER_ADMIN" && session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden: Only admins can create companies" }, { status: 403 });
     }
 
     const body = await request.json();

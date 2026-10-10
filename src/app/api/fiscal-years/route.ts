@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/server/auth";
 import { prisma } from "@/server/prisma";
 import { createFiscalYearSchema } from "@/server/validators/fiscal-year";
+import { checkPermission } from "@/server/permissions";
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,18 +21,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Verify the company belongs to the user's organization
-    const company = await prisma.company.findUnique({
-      where: { id: companyId },
-      select: { organizationId: true },
-    });
-
-    if (!company) {
-      return NextResponse.json({ error: "Company not found" }, { status: 404 });
-    }
-
-    if (company.organizationId !== session.user.organizationId) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!(await checkPermission(companyId, "canAccessEntries"))) {
+      return NextResponse.json({ error: "Forbidden: No access to this company" }, { status: 403 });
     }
 
     const fiscalYears = await prisma.fiscalYear.findMany({
@@ -73,18 +64,8 @@ export async function POST(request: NextRequest) {
 
     const { companyId, label, startDate, endDate, isDefault } = parsed.data;
 
-    // Verify the company belongs to the user's organization
-    const company = await prisma.company.findUnique({
-      where: { id: companyId },
-      select: { organizationId: true },
-    });
-
-    if (!company) {
-      return NextResponse.json({ error: "Company not found" }, { status: 404 });
-    }
-
-    if (company.organizationId !== session.user.organizationId) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!(await checkPermission(companyId, "canAccessSetup"))) {
+      return NextResponse.json({ error: "Forbidden: You don't have setup access to this company" }, { status: 403 });
     }
 
     // Check for overlapping fiscal years
