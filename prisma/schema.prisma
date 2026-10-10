@@ -1,0 +1,1119 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ═══════════════════════════════════════
+// TENANT & ORGANIZATION
+// ═══════════════════════════════════════
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  type      OrgType  @default(FIDUCIARY)
+  address   String?
+  city      String?
+  phone     String?
+  email     String?
+  ice       String?
+  rc        String?
+  patente   String?
+  cnss      String?
+  ifNumber  String?  @map("if_number")
+  logoUrl   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  companies Company[]
+  users     User[]
+}
+
+enum OrgType {
+  FIDUCIARY
+  SINGLE_COMPANY
+}
+
+// ═══════════════════════════════════════
+// COMPANY (SOCIÉTÉ / DOSSIER)
+// ═══════════════════════════════════════
+
+model Company {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  name      String
+  legalForm String?
+  address   String?
+  city      String?
+  phone     String?
+  email     String?
+  ice       String?
+  rc        String?
+  patente   String?
+  cnss      String?
+  ifNumber  String?   @map("if_number")
+  chartType ChartType @default(NORMAL)
+  currency  String    @default("MAD")
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  fiscalYears       FiscalYear[]
+  accounts          Account[]
+  journals          Journal[]
+  fixedAssets       FixedAsset[]
+  analyticalGrids   AnalyticalGrid[]
+  vatDeclarations   VATDeclaration[]
+  taxPackages       TaxPackage[]
+  budgets           Budget[]
+  userCompanyAccess UserCompanyAccess[]
+  agentRuns         AgentRun[]
+  suggestions       Suggestion[]
+
+  @@index([organizationId])
+}
+
+enum ChartType {
+  NORMAL
+  SIMPLIFIED
+}
+
+// ═══════════════════════════════════════
+// FISCAL YEAR (EXERCICE COMPTABLE)
+// ═══════════════════════════════════════
+
+model FiscalYear {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+
+  label     String
+  startDate DateTime
+  endDate   DateTime
+  status    FiscalYearStatus @default(OPEN)
+  isDefault Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  journalEntries    JournalEntry[]
+  fixedAssetEntries FixedAssetAmortization[]
+  vatDeclarations   VATDeclaration[]
+  taxPackages       TaxPackage[]
+  budgets           Budget[]
+
+  @@unique([companyId, label])
+  @@index([companyId])
+}
+
+enum FiscalYearStatus {
+  OPEN
+  PROVISIONAL_CLOSE
+  CLOSED
+}
+
+// ═══════════════════════════════════════
+// USERS & ACCESS CONTROL
+// ═══════════════════════════════════════
+
+model User {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  email        String    @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  role         UserRole  @default(ACCOUNTANT)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  companyAccess          UserCompanyAccess[]
+  journalEntries         JournalEntry[]          @relation("CreatedBy")
+  auditLogs              AuditLog[]
+  agentRuns              AgentRun[]
+  uploadedDocuments      Document[]              @relation("DocumentUploader")
+  approvedDocuments      Document[]              @relation("DocumentApprover")
+  approvalDecisions      ApprovalDecision[]
+  reviewedSuggestions    Suggestion[]            @relation("SuggestionReviewer")
+  suggestionReviewEvents SuggestionReviewEvent[] @relation("SuggestionReviewActor")
+
+  @@index([organizationId])
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  ACCOUNTANT
+  VIEWER
+}
+
+model UserCompanyAccess {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+
+  canAccessSetup          Boolean @default(false)
+  canAccessEntries        Boolean @default(true)
+  canAccessVAT            Boolean @default(false)
+  canAccessFixedAssets    Boolean @default(false)
+  canAccessAnalytical     Boolean @default(false)
+  canAccessTaxPackage     Boolean @default(false)
+  canAccessReports        Boolean @default(true)
+  canAccessUserManagement Boolean @default(false)
+
+  canValidateEntries    Boolean @default(false)
+  canDeleteDraftEntries Boolean @default(false)
+  canCloseExercise      Boolean @default(false)
+  canImportData         Boolean @default(false)
+  canExportData         Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, companyId])
+  @@index([userId])
+  @@index([companyId])
+}
+
+// ═══════════════════════════════════════
+// CHART OF ACCOUNTS (PLAN COMPTABLE)
+// ═══════════════════════════════════════
+
+model Account {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+
+  code        String
+  label       String
+  labelAr     String?
+  classNumber Int
+  accountType AccountType
+
+  parentCode         String?
+  isActive           Boolean @default(true)
+  isSystem           Boolean @default(false)
+  isAuxiliary        Boolean @default(false)
+  isTiers            Boolean @default(false)
+  requiresAnalytical Boolean @default(false)
+
+  vatRate Decimal?
+  vatType VATAccountType?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  journalEntryLines  JournalEntryLine[]
+  fixedAssets        FixedAsset[]       @relation("AssetAccount")
+  amortizationAssets FixedAsset[]       @relation("AmortizationAccount")
+  dotationAssets     FixedAsset[]       @relation("DotationAccount")
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([companyId, classNumber])
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+  RESULT
+  OFF_BALANCE_SHEET
+}
+
+enum VATAccountType {
+  VAT_COLLECTED
+  VAT_DEDUCTIBLE_ASSETS
+  VAT_DEDUCTIBLE_EXPENSES
+  VAT_DUE
+  VAT_CREDIT
+}
+
+// ═══════════════════════════════════════
+// JOURNALS (JOURNAUX COMPTABLES)
+// ═══════════════════════════════════════
+
+model Journal {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+
+  code                          String
+  label                         String
+  type                          JournalType
+  defaultCounterpartAccountCode String?
+
+  isActive        Boolean @default(true)
+  isSystem        Boolean @default(false)
+  nextEntryNumber Int     @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entries JournalEntry[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+}
+
+enum JournalType {
+  PURCHASES
+  SALES
+  BANK
+  CASH
+  MISCELLANEOUS
+  OPENING
+  PAYROLL
+  CLOSING
+  OTHER
+}
+
+// ═══════════════════════════════════════
+// JOURNAL ENTRIES (ÉCRITURES COMPTABLES)
+// ═══════════════════════════════════════
+
+model JournalEntry {
+  id           String     @id @default(cuid())
+  fiscalYearId String
+  fiscalYear   FiscalYear @relation(fields: [fiscalYearId], references: [id])
+  journalId    String
+  journal      Journal    @relation(fields: [journalId], references: [id])
+
+  entryNumber Int
+  entryDate   DateTime
+  reference   String?
+  description String
+  piece       String?
+
+  status      EntryStatus @default(DRAFT)
+  totalDebit  Decimal     @default(0) @db.Decimal(15, 2)
+  totalCredit Decimal     @default(0) @db.Decimal(15, 2)
+
+  origin       EntryOrigin @default(MANUAL)
+  sourceModule String?
+  sourceId     String?
+
+  isReversed      Boolean @default(false)
+  reversedById    String?
+  isReversal      Boolean @default(false)
+  originalEntryId String?
+
+  createdById String
+  createdBy   User      @relation("CreatedBy", fields: [createdById], references: [id])
+  validatedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  lines JournalEntryLine[]
+
+  @@unique([journalId, fiscalYearId, entryNumber])
+  @@index([fiscalYearId])
+  @@index([journalId])
+  @@index([entryDate])
+  @@index([status])
+  @@index([createdById])
+}
+
+enum EntryStatus {
+  DRAFT
+  VALIDATED
+  REVERSED
+}
+
+enum EntryOrigin {
+  MANUAL
+  IMPORT
+  TEMPLATE
+  AUTO
+}
+
+model JournalEntryLine {
+  id             String       @id @default(cuid())
+  journalEntryId String
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+
+  lineNumber  Int
+  accountCode String
+  account     Account @relation(fields: [accountCode, companyId], references: [code, companyId])
+  companyId   String
+
+  label  String
+  debit  Decimal @default(0) @db.Decimal(15, 2)
+  credit Decimal @default(0) @db.Decimal(15, 2)
+
+  tiersName      String?
+  tiersReference String?
+  dueDate        DateTime?
+
+  lettrageCode String?
+  isLettered   Boolean @default(false)
+
+  analyticalLines AnalyticalEntryLine[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([journalEntryId])
+  @@index([accountCode, companyId])
+  @@index([lettrageCode])
+  @@index([tiersName])
+}
+
+// ═══════════════════════════════════════
+// ENTRY TEMPLATES
+// ═══════════════════════════════════════
+
+model EntryTemplate {
+  id          String  @id @default(cuid())
+  companyId   String
+  journalCode String
+  name        String
+  description String?
+
+  lines EntryTemplateLine[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+model EntryTemplateLine {
+  id         String        @id @default(cuid())
+  templateId String
+  template   EntryTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  lineNumber    Int
+  accountCode   String
+  label         String?
+  debitFormula  String?
+  creditFormula String?
+
+  @@index([templateId])
+}
+
+// ═══════════════════════════════════════
+// LETTRAGE (ACCOUNT RECONCILIATION)
+// ═══════════════════════════════════════
+
+model LettrageGroup {
+  id          String   @id @default(cuid())
+  companyId   String
+  accountCode String
+  code        String
+  isPartial   Boolean  @default(false)
+  totalDebit  Decimal  @db.Decimal(15, 2)
+  totalCredit Decimal  @db.Decimal(15, 2)
+  remainder   Decimal  @default(0) @db.Decimal(15, 2)
+  createdAt   DateTime @default(now())
+
+  @@unique([companyId, accountCode, code])
+  @@index([companyId, accountCode])
+}
+
+// ═══════════════════════════════════════
+// BANK RECONCILIATION
+// ═══════════════════════════════════════
+
+model BankStatement {
+  id              String   @id @default(cuid())
+  companyId       String
+  bankAccountCode String
+  statementDate   DateTime
+  openingBalance  Decimal  @db.Decimal(15, 2)
+  closingBalance  Decimal  @db.Decimal(15, 2)
+  importedAt      DateTime @default(now())
+  fileName        String?
+
+  lines BankStatementLine[]
+
+  @@index([companyId])
+}
+
+model BankStatementLine {
+  id              String        @id @default(cuid())
+  bankStatementId String
+  bankStatement   BankStatement @relation(fields: [bankStatementId], references: [id], onDelete: Cascade)
+
+  transactionDate           DateTime
+  valueDate                 DateTime?
+  reference                 String?
+  description               String
+  debit                     Decimal   @default(0) @db.Decimal(15, 2)
+  credit                    Decimal   @default(0) @db.Decimal(15, 2)
+  isReconciled              Boolean   @default(false)
+  reconciledWithEntryLineId String?
+
+  @@index([bankStatementId])
+  @@index([transactionDate])
+}
+
+// ═══════════════════════════════════════
+// FIXED ASSETS (IMMOBILISATIONS)
+// ═══════════════════════════════════════
+
+model FixedAsset {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+
+  code        String
+  label       String
+  description String?
+  category    AssetCategory
+
+  assetAccountCode        String
+  assetAccount            Account @relation("AssetAccount", fields: [assetAccountCode, companyId], references: [code, companyId])
+  amortizationAccountCode String
+  amortizationAccount     Account @relation("AmortizationAccount", fields: [amortizationAccountCode, companyId], references: [code, companyId])
+  dotationAccountCode     String
+  dotationAccount         Account @relation("DotationAccount", fields: [dotationAccountCode, companyId], references: [code, companyId])
+
+  acquisitionDate   DateTime
+  commissioningDate DateTime
+  acquisitionValue  Decimal  @db.Decimal(15, 2)
+  residualValue     Decimal  @default(0) @db.Decimal(15, 2)
+  amortizableBase   Decimal  @db.Decimal(15, 2)
+
+  usefulLifeYears       Int
+  amortizationMethod    AmortizationMethod
+  degressiveCoefficient Decimal?           @db.Decimal(5, 2)
+  annualRate            Decimal            @db.Decimal(8, 4)
+
+  cumulativeAmortization Decimal     @default(0) @db.Decimal(15, 2)
+  netBookValue           Decimal     @db.Decimal(15, 2)
+  status                 AssetStatus @default(ACTIVE)
+
+  disposalDate     DateTime?
+  disposalAmount   Decimal?  @db.Decimal(15, 2)
+  disposalGainLoss Decimal?  @db.Decimal(15, 2)
+
+  location         String?
+  serialNumber     String?
+  supplier         String?
+  invoiceReference String?
+  notes            String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  amortizationSchedule FixedAssetAmortization[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([companyId, status])
+  @@index([supplier])
+}
+
+enum AssetCategory {
+  INTANGIBLE
+  LAND
+  BUILDINGS
+  EQUIPMENT
+  TRANSPORT
+  IT_EQUIPMENT
+  FURNITURE
+  OTHER_TANGIBLE
+  FINANCIAL
+  STARTUP_COSTS
+}
+
+enum AmortizationMethod {
+  LINEAR
+  DEGRESSIVE
+}
+
+enum AssetStatus {
+  ACTIVE
+  FULLY_AMORTIZED
+  DISPOSED
+  SCRAPPED
+}
+
+model FixedAssetAmortization {
+  id           String     @id @default(cuid())
+  fixedAssetId String
+  fixedAsset   FixedAsset @relation(fields: [fixedAssetId], references: [id])
+  fiscalYearId String
+  fiscalYear   FiscalYear @relation(fields: [fiscalYearId], references: [id])
+
+  year                   Int
+  periodStart            DateTime
+  periodEnd              DateTime
+  openingValue           Decimal  @db.Decimal(15, 2)
+  annualDotation         Decimal  @db.Decimal(15, 2)
+  cumulativeAmortization Decimal  @db.Decimal(15, 2)
+  closingNetValue        Decimal  @db.Decimal(15, 2)
+  isProrata              Boolean  @default(false)
+
+  journalEntryId String?
+  isPosted       Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([fixedAssetId])
+  @@index([fiscalYearId])
+}
+
+// ═══════════════════════════════════════
+// ANALYTICAL ACCOUNTING
+// ═══════════════════════════════════════
+
+model AnalyticalGrid {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+
+  code     String
+  label    String
+  isActive Boolean @default(true)
+
+  posts AnalyticalPost[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, code])
+  @@index([companyId])
+}
+
+model AnalyticalPost {
+  id     String         @id @default(cuid())
+  gridId String
+  grid   AnalyticalGrid @relation(fields: [gridId], references: [id])
+
+  code     String
+  label    String
+  parentId String?
+  parent   AnalyticalPost?  @relation("PostHierarchy", fields: [parentId], references: [id])
+  children AnalyticalPost[] @relation("PostHierarchy")
+  isActive Boolean          @default(true)
+
+  analyticalLines AnalyticalEntryLine[]
+  budgets         Budget[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gridId])
+}
+
+model AnalyticalEntryLine {
+  id                 String           @id @default(cuid())
+  journalEntryLineId String
+  journalEntryLine   JournalEntryLine @relation(fields: [journalEntryLineId], references: [id], onDelete: Cascade)
+  analyticalPostId   String
+  analyticalPost     AnalyticalPost   @relation(fields: [analyticalPostId], references: [id])
+
+  amount     Decimal @db.Decimal(15, 2)
+  percentage Decimal @db.Decimal(8, 4)
+
+  createdAt DateTime @default(now())
+
+  @@index([journalEntryLineId])
+  @@index([analyticalPostId])
+}
+
+// ═══════════════════════════════════════
+// BUDGETS
+// ═══════════════════════════════════════
+
+model Budget {
+  id           String     @id @default(cuid())
+  companyId    String
+  company      Company    @relation(fields: [companyId], references: [id])
+  fiscalYearId String
+  fiscalYear   FiscalYear @relation(fields: [fiscalYearId], references: [id])
+
+  label String
+  type  BudgetType
+
+  analyticalPostId String?
+  analyticalPost   AnalyticalPost? @relation(fields: [analyticalPostId], references: [id])
+  accountCode      String?
+
+  lines BudgetLine[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([fiscalYearId])
+}
+
+enum BudgetType {
+  GENERAL
+  ANALYTICAL
+}
+
+model BudgetLine {
+  id       String @id @default(cuid())
+  budgetId String
+  budget   Budget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+
+  period        BudgetPeriod
+  periodIndex   Int
+  amount        Decimal      @db.Decimal(15, 2)
+  revisedAmount Decimal?     @db.Decimal(15, 2)
+
+  @@unique([budgetId, period, periodIndex])
+  @@index([budgetId])
+}
+
+enum BudgetPeriod {
+  MONTHLY
+  QUARTERLY
+  ANNUAL
+}
+
+// ═══════════════════════════════════════
+// VAT (TVA)
+// ═══════════════════════════════════════
+
+model VATDeclaration {
+  id           String     @id @default(cuid())
+  companyId    String
+  company      Company    @relation(fields: [companyId], references: [id])
+  fiscalYearId String
+  fiscalYear   FiscalYear @relation(fields: [fiscalYearId], references: [id])
+
+  regime      VATRegime
+  periodType  VATperiodType
+  periodIndex Int
+  startDate   DateTime
+  endDate     DateTime
+
+  taxableRevenue20 Decimal @default(0) @db.Decimal(15, 2)
+  taxableRevenue14 Decimal @default(0) @db.Decimal(15, 2)
+  taxableRevenue10 Decimal @default(0) @db.Decimal(15, 2)
+  taxableRevenue7  Decimal @default(0) @db.Decimal(15, 2)
+  exemptRevenue    Decimal @default(0) @db.Decimal(15, 2)
+
+  outputVAT20    Decimal @default(0) @db.Decimal(15, 2)
+  outputVAT14    Decimal @default(0) @db.Decimal(15, 2)
+  outputVAT10    Decimal @default(0) @db.Decimal(15, 2)
+  outputVAT7     Decimal @default(0) @db.Decimal(15, 2)
+  totalOutputVAT Decimal @default(0) @db.Decimal(15, 2)
+
+  inputVATAssets   Decimal @default(0) @db.Decimal(15, 2)
+  inputVATExpenses Decimal @default(0) @db.Decimal(15, 2)
+  totalInputVAT    Decimal @default(0) @db.Decimal(15, 2)
+
+  previousCredit Decimal @default(0) @db.Decimal(15, 2)
+  netVAT         Decimal @default(0) @db.Decimal(15, 2)
+  isCredit       Boolean @default(false)
+
+  status           VATDeclarationStatus @default(DRAFT)
+  submissionDate   DateTime?
+  paymentDate      DateTime?
+  paymentReference String?
+  xmlContent       String?
+
+  deductionLines VATDeductionLine[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, fiscalYearId, periodType, periodIndex])
+  @@index([companyId])
+  @@index([fiscalYearId])
+}
+
+enum VATRegime {
+  ENCAISSEMENT
+  DEBIT
+}
+
+enum VATperiodType {
+  MONTHLY
+  QUARTERLY
+}
+
+enum VATDeclarationStatus {
+  DRAFT
+  COMPUTED
+  VALIDATED
+  SUBMITTED
+  PAID
+}
+
+model VATDeductionLine {
+  id               String         @id @default(cuid())
+  vatDeclarationId String
+  vatDeclaration   VATDeclaration @relation(fields: [vatDeclarationId], references: [id], onDelete: Cascade)
+
+  supplierName    String
+  supplierICE     String?
+  invoiceNumber   String
+  invoiceDate     DateTime
+  invoiceAmountHT Decimal          @db.Decimal(15, 2)
+  vatRate         Decimal          @db.Decimal(5, 2)
+  vatAmount       Decimal          @db.Decimal(15, 2)
+  deductionType   VATDeductionType
+  prorata         Decimal          @default(100) @db.Decimal(5, 2)
+
+  @@index([vatDeclarationId])
+}
+
+enum VATDeductionType {
+  ASSETS
+  EXPENSES
+}
+
+// ═══════════════════════════════════════
+// TAX PACKAGE (LIASSE FISCALE)
+// ═══════════════════════════════════════
+
+model TaxPackage {
+  id           String     @id @default(cuid())
+  companyId    String
+  company      Company    @relation(fields: [companyId], references: [id])
+  fiscalYearId String
+  fiscalYear   FiscalYear @relation(fields: [fiscalYearId], references: [id])
+
+  status      TaxPackageStatus @default(DRAFT)
+  xmlContent  String?
+  generatedAt DateTime?
+  submittedAt DateTime?
+
+  tables TaxPackageTable[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, fiscalYearId])
+  @@index([companyId])
+}
+
+enum TaxPackageStatus {
+  DRAFT
+  GENERATED
+  REVIEWED
+  SUBMITTED
+}
+
+model TaxPackageTable {
+  id           String     @id @default(cuid())
+  taxPackageId String
+  taxPackage   TaxPackage @relation(fields: [taxPackageId], references: [id], onDelete: Cascade)
+
+  tableCode       String
+  tableName       String
+  isAutoGenerated Boolean @default(true)
+
+  cells TaxPackageCell[]
+
+  @@unique([taxPackageId, tableCode])
+  @@index([taxPackageId])
+}
+
+model TaxPackageCell {
+  id      String          @id @default(cuid())
+  tableId String
+  table   TaxPackageTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  rowCode    String
+  columnCode String
+  label      String
+  value      Decimal @default(0) @db.Decimal(15, 2)
+  isManual   Boolean @default(false)
+  formula    String?
+
+  @@unique([tableId, rowCode, columnCode])
+  @@index([tableId])
+}
+
+// ═══════════════════════════════════════
+// AUDIT LOG
+// ═══════════════════════════════════════
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  companyId  String?
+  action     String
+  entityType String
+  entityId   String?
+  details    Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([companyId])
+  @@index([createdAt])
+  @@index([entityType, entityId])
+}
+
+// ═══════════════════════════════════════
+// AI AGENT RUNS
+// ═══════════════════════════════════════
+
+model AgentRun {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+
+  agentType AgentType
+  status    AgentRunStatus @default(PENDING)
+
+  inputSnapshot   Json  @db.Json
+  contextSnapshot Json? @db.Json
+
+  modelProvider  String
+  modelVersion   String
+  promptTemplate String?
+
+  structuredOutput Json?    @db.Json
+  rawOutput        String?
+  confidence       Decimal? @db.Decimal(5, 4)
+
+  errorMessage String?
+  durationMs   Int?
+
+  createdAt   DateTime     @default(now())
+  completedAt DateTime?
+  suggestions Suggestion[]
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([agentType])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum AgentType {
+  VAT_ADVISOR
+  ENTRY_SUGGESTION
+  AMORTIZATION_ADVISOR
+  ANOMALY_DETECTOR
+  DOCUMENT_PROCESSOR
+  ACCOUNTING_ENTRY_PREPARER
+  TAX_SUPPORT
+  PAYROLL_SUPPORT
+  CLOSING_REPORTING
+  AUDIT_COMPLIANCE
+}
+
+enum AgentRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+// ═══════════════════════════════════════
+// DOCUMENT PROCESSING
+// ═══════════════════════════════════════
+
+enum DocumentStatus {
+  UPLOADED
+  PROCESSING
+  REVIEW_REQUIRED
+  APPROVED
+  REJECTED
+  FAILED
+}
+
+enum ExtractionRunStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum FieldReviewStatus {
+  PENDING
+  REVIEWED
+  CORRECTED
+  ACCEPTED
+  APPROVED
+  REJECTED
+}
+
+enum SuggestionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CORRECTED
+}
+
+enum SuggestionSourceType {
+  DOCUMENT_FIELD
+  AGENT_SUGGESTION
+}
+
+enum ApprovalDecisionType {
+  APPROVE
+  REJECT
+  SEND_BACK
+}
+
+model Document {
+  id               String         @id @default(cuid())
+  tenantId         String
+  uploadedById     String
+  originalFilename String
+  mimeType         String
+  storagePath      String
+  fileSize         Int?
+  documentType     String?
+  status           DocumentStatus @default(UPLOADED)
+  currentRunId     String?
+  approvedAt       DateTime?
+  approvedById     String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  extractionRuns    DocumentExtractionRun[]
+  extractedFields   ExtractedField[]
+  approvalDecisions ApprovalDecision[]
+  suggestions       Suggestion[]
+
+  uploadedBy User  @relation("DocumentUploader", fields: [uploadedById], references: [id])
+  approvedBy User? @relation("DocumentApprover", fields: [approvedById], references: [id])
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([uploadedById])
+  @@index([createdAt])
+}
+
+model DocumentExtractionRun {
+  id            String              @id @default(cuid())
+  documentId    String
+  tenantId      String
+  agentType     AgentType           @default(DOCUMENT_PROCESSOR)
+  modelName     String
+  modelVersion  String?
+  promptVersion String?
+  status        ExtractionRunStatus @default(QUEUED)
+  rawOutputJson Json?
+  startedAt     DateTime            @default(now())
+  completedAt   DateTime?
+  errorMessage  String?
+  createdAt     DateTime            @default(now())
+
+  document    Document         @relation(fields: [documentId], references: [id])
+  fields      ExtractedField[]
+  suggestions Suggestion[]
+
+  @@index([documentId])
+  @@index([tenantId])
+  @@index([status])
+}
+
+model ExtractedField {
+  id              String            @id @default(cuid())
+  documentId      String
+  extractionRunId String
+  fieldName       String
+  fieldValue      Json?
+  confidenceScore Float?
+  reviewStatus    FieldReviewStatus @default(PENDING)
+  correctedValue  Json?
+  correctedById   String?
+  correctedAt     DateTime?
+  isCurrent       Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  document      Document              @relation(fields: [documentId], references: [id])
+  extractionRun DocumentExtractionRun @relation(fields: [extractionRunId], references: [id])
+  suggestion    Suggestion?
+
+  @@index([documentId])
+  @@index([extractionRunId])
+  @@index([reviewStatus])
+  @@index([isCurrent])
+}
+
+model Suggestion {
+  id               String               @id @default(cuid())
+  companyId        String
+  agentRunId       String?
+  documentId       String?
+  extractionRunId  String?
+  extractedFieldId String?              @unique
+  sourceType       SuggestionSourceType
+  agentType        AgentType
+  sourceKey        String
+  label            String?
+  value            Json?
+  confidence       Float?
+  status           SuggestionStatus     @default(PENDING)
+  finalValue       Json?
+  reviewNotes      String?
+  reviewedById     String?
+  reviewedAt       DateTime?
+  isCurrent        Boolean              @default(true)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  company        Company                 @relation(fields: [companyId], references: [id])
+  agentRun       AgentRun?               @relation(fields: [agentRunId], references: [id])
+  document       Document?               @relation(fields: [documentId], references: [id])
+  extractionRun  DocumentExtractionRun?  @relation(fields: [extractionRunId], references: [id])
+  extractedField ExtractedField?         @relation(fields: [extractedFieldId], references: [id])
+  reviewedBy     User?                   @relation("SuggestionReviewer", fields: [reviewedById], references: [id])
+  reviewEvents   SuggestionReviewEvent[]
+
+  @@index([companyId])
+  @@index([agentRunId])
+  @@index([documentId])
+  @@index([extractionRunId])
+  @@index([status])
+  @@index([sourceType])
+  @@index([agentType])
+  @@index([isCurrent])
+}
+
+model SuggestionReviewEvent {
+  id             String           @id @default(cuid())
+  suggestionId   String
+  previousStatus SuggestionStatus
+  nextStatus     SuggestionStatus
+  finalValue     Json?
+  notes          String?
+  reviewedById   String
+  createdAt      DateTime         @default(now())
+
+  suggestion Suggestion @relation(fields: [suggestionId], references: [id])
+  reviewedBy User       @relation("SuggestionReviewActor", fields: [reviewedById], references: [id])
+
+  @@index([suggestionId])
+  @@index([reviewedById])
+  @@index([createdAt])
+}
+
+model ApprovalDecision {
+  id          String               @id @default(cuid())
+  tenantId    String
+  documentId  String
+  decidedById String
+  decision    ApprovalDecisionType
+  notes       String?
+  createdAt   DateTime             @default(now())
+
+  document  Document @relation(fields: [documentId], references: [id])
+  decidedBy User     @relation(fields: [decidedById], references: [id])
+
+  @@index([documentId])
+  @@index([tenantId])
+  @@index([decidedById])
+}
