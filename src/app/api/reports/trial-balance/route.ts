@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import { auth } from "@/server/auth";
-import { prisma } from "@/server/prisma";
-import Decimal from "decimal.js";
+import { checkPermission } from "@/server/permissions";
+import { computeTrialBalance } from "@/server/calculations/balance";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
   if (!session?.user) {
-    return NextResponse.json({ error: "Non autoris\u00e9" }, { status: 401 });
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
   const params = request.nextUrl.searchParams;
   const companyId = params.get("companyId");
   const fiscalYearId = params.get("fiscalYearId");
-  const startDate = params.get("startDate");
-  const endDate = params.get("endDate");
+  const startDateStr = params.get("startDate");
+  const endDateStr = params.get("endDate");
   const status = params.get("status"); // DRAFT | VALIDATED | all
 
   if (!companyId || !fiscalYearId) {
@@ -24,113 +23,40 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Build the where clause for journal entry lines
-  const journalEntryWhere: Prisma.JournalEntryWhereInput = {
-    fiscalYearId,
-    journal: { companyId },
-    status: status && status !== "all"
-      ? (status as Prisma.JournalEntryWhereInput["status"])
-      : { in: ["DRAFT", "VALIDATED"] },
-    ...(startDate || endDate
-      ? {
-          entryDate: {
-            ...(startDate ? { gte: new Date(startDate) } : {}),
-            ...(endDate ? { lte: new Date(endDate) } : {}),
-          },
-        }
-      : {}),
-  };
-  const entryWhere: Prisma.JournalEntryLineWhereInput = {
+  if (!(await checkPermission(companyId, "canAccessReports"))) {
+    return NextResponse.json({ error: "Forbidden: No access to reports" }, { status: 403 });
+  }
+
+  const startDate = startDateStr ? new Date(startDateStr) : undefined;
+  const endDate = endDateStr ? new Date(endDateStr) : undefined;
+  const statusFilter = (status === "DRAFT" || status === "VALIDATED") ? status : undefined;
+
+  const result = await computeTrialBalance(
     companyId,
-    journalEntry: journalEntryWhere,
-  };
+    fiscalYearId,
+    startDate,
+    endDate,
+    statusFilter
+  );
 
-  // Fetch all matching lines grouped by account
-  const lines = await prisma.journalEntryLine.findMany({
-    where: entryWhere,
-    select: {
-      accountCode: true,
-      debit: true,
-      credit: true,
-      account: {
-        select: {
-          code: true,
-          label: true,
-          classNumber: true,
-          accountType: true,
-        },
-      },
-    },
-  });
-
-  // Aggregate by account code using Decimal for precision
-  const accountMap = new Map<
-    string,
-    {
-      code: string;
-      label: string;
-      classNumber: number;
-      accountType: string;
-      totalDebit: Decimal;
-      totalCredit: Decimal;
-    }
-  >();
-
-  for (const line of lines) {
-    const code = line.accountCode;
-    let entry = accountMap.get(code);
-    if (!entry) {
-      entry = {
-        code: line.account.code,
-        label: line.account.label,
-        classNumber: line.account.classNumber,
-        accountType: line.account.accountType,
-        totalDebit: new Decimal(0),
-        totalCredit: new Decimal(0),
-      };
-      accountMap.set(code, entry);
-    }
-    entry.totalDebit = entry.totalDebit.plus(new Decimal(line.debit.toString()));
-    entry.totalCredit = entry.totalCredit.plus(new Decimal(line.credit.toString()));
-  }
-
-  // Build result sorted by account code
-  const accounts = Array.from(accountMap.values())
-    .sort((a, b) => a.code.localeCompare(b.code))
-    .map((acc) => {
-      const solde = acc.totalDebit.minus(acc.totalCredit);
-      return {
-        code: acc.code,
-        label: acc.label,
-        classNumber: acc.classNumber,
-        accountType: acc.accountType,
-        totalDebit: acc.totalDebit.toFixed(2),
-        totalCredit: acc.totalCredit.toFixed(2),
-        soldeDebit: solde.isPositive() ? solde.toFixed(2) : "0.00",
-        soldeCredit: solde.isNegative() ? solde.abs().toFixed(2) : "0.00",
-      };
-    });
-
-  // Compute grand totals
-  let grandTotalDebit = new Decimal(0);
-  let grandTotalCredit = new Decimal(0);
-  let grandSoldeDebit = new Decimal(0);
-  let grandSoldeCredit = new Decimal(0);
-
-  for (const acc of accounts) {
-    grandTotalDebit = grandTotalDebit.plus(new Decimal(acc.totalDebit));
-    grandTotalCredit = grandTotalCredit.plus(new Decimal(acc.totalCredit));
-    grandSoldeDebit = grandSoldeDebit.plus(new Decimal(acc.soldeDebit));
-    grandSoldeCredit = grandSoldeCredit.plus(new Decimal(acc.soldeCredit));
-  }
+  const accounts = result.accounts.map(acc => ({
+    code: acc.accountCode,
+    label: acc.accountLabel,
+    classNumber: acc.classNumber,
+    accountType: "UNKNOWN", // Fallback for backwards compatibility
+    totalDebit: acc.totalDebit.toFixed(2),
+    totalCredit: acc.totalCredit.toFixed(2),
+    soldeDebit: acc.soldeDebit.toFixed(2),
+    soldeCredit: acc.soldeCredit.toFixed(2),
+  }));
 
   return NextResponse.json({
     accounts,
     totals: {
-      totalDebit: grandTotalDebit.toFixed(2),
-      totalCredit: grandTotalCredit.toFixed(2),
-      soldeDebit: grandSoldeDebit.toFixed(2),
-      soldeCredit: grandSoldeCredit.toFixed(2),
+      totalDebit: result.totalDebit.toFixed(2),
+      totalCredit: result.totalCredit.toFixed(2),
+      soldeDebit: result.totalSoldeDebit.toFixed(2),
+      soldeCredit: result.totalSoldeCredit.toFixed(2),
     },
   });
 }

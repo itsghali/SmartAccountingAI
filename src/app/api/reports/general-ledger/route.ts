@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { auth } from "@/server/auth";
 import { prisma } from "@/server/prisma";
 import Decimal from "decimal.js";
+import { checkPermission } from "@/server/permissions";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -22,6 +23,10 @@ export async function GET(request: NextRequest) {
       { error: "companyId et fiscalYearId requis" },
       { status: 400 }
     );
+  }
+
+  if (!(await checkPermission(companyId, "canAccessReports"))) {
+    return NextResponse.json({ error: "Forbidden: No access to reports" }, { status: 403 });
   }
 
   // Build where clause
