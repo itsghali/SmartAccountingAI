@@ -1765,7 +1765,7 @@ export default function DocumentReviewPage() {
           }
         }}
       >
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-75xl">
           <DialogHeader>
             <DialogTitle>Modify Tax Determination</DialogTitle>
           </DialogHeader>

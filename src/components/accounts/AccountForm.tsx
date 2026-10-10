@@ -94,14 +94,14 @@ export function AccountForm({ account, companyId, onSaved }: AccountFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-4">
-      <h3 className="text-lg font-semibold">
+    <form onSubmit={handleSubmit} className="p-6 m-6 bg-card/60 backdrop-blur-md rounded-xl border border-border/50 shadow-sm space-y-6">
+      <h3 className="text-xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary mb-2">
         {account ? "Détails du compte" : "Nouveau compte"}
       </h3>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label>Code *</Label>
+      <div className="grid grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <Label className="text-muted-foreground">Code *</Label>
           <Input
             value={code}
             onChange={(e) => setCode(e.target.value)}
@@ -111,8 +111,8 @@ export function AccountForm({ account, companyId, onSaved }: AccountFormProps) {
             maxLength={11}
           />
         </div>
-        <div>
-          <Label>Type</Label>
+        <div className="space-y-2">
+          <Label className="text-muted-foreground">Type</Label>
           <Select value={accountType} onValueChange={(v) => v !== null && setAccountType(v)}>
             <SelectTrigger>
               <SelectValue />
@@ -130,8 +130,8 @@ export function AccountForm({ account, companyId, onSaved }: AccountFormProps) {
         </div>
       </div>
 
-      <div>
-        <Label>Libellé (Français) *</Label>
+      <div className="space-y-2">
+        <Label className="text-muted-foreground">Libellé (Français) *</Label>
         <Input
           value={label}
           onChange={(e) => setLabel(e.target.value)}
@@ -140,8 +140,8 @@ export function AccountForm({ account, companyId, onSaved }: AccountFormProps) {
         />
       </div>
 
-      <div>
-        <Label>Libellé (Arabe)</Label>
+      <div className="space-y-2">
+        <Label className="text-muted-foreground">Libellé (Arabe)</Label>
         <Input
           value={labelAr}
           onChange={(e) => setLabelAr(e.target.value)}
@@ -150,8 +150,8 @@ export function AccountForm({ account, companyId, onSaved }: AccountFormProps) {
         />
       </div>
 
-      <div>
-        <Label>Compte parent</Label>
+      <div className="space-y-2">
+        <Label className="text-muted-foreground">Compte parent</Label>
         <Input
           value={parentCode}
           onChange={(e) => setParentCode(e.target.value)}
@@ -160,8 +160,8 @@ export function AccountForm({ account, companyId, onSaved }: AccountFormProps) {
         />
       </div>
 
-      <div>
-        <Label>Taux TVA par défaut</Label>
+      <div className="space-y-2">
+        <Label className="text-muted-foreground">Taux TVA par défaut</Label>
         <Select value={vatRate} onValueChange={(v) => v !== null && setVatRate(v)}>
           <SelectTrigger>
             <SelectValue placeholder="Aucun" />
@@ -177,17 +177,17 @@ export function AccountForm({ account, companyId, onSaved }: AccountFormProps) {
         </Select>
       </div>
 
-      <div className="space-y-3 pt-2">
-        <div className="flex items-center justify-between">
-          <Label>Compte auxiliaire</Label>
+      <div className="space-y-4 pt-4 border-t border-border/50 mt-4">
+        <div className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-muted/20">
+          <Label className="font-medium">Compte auxiliaire</Label>
           <Switch checked={isAuxiliary} onCheckedChange={setIsAuxiliary} />
         </div>
-        <div className="flex items-center justify-between">
-          <Label>Compte tiers (client/fournisseur)</Label>
+        <div className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-muted/20">
+          <Label className="font-medium">Compte tiers (client/fournisseur)</Label>
           <Switch checked={isTiers} onCheckedChange={setIsTiers} />
         </div>
-        <div className="flex items-center justify-between">
-          <Label>Ventilation analytique obligatoire</Label>
+        <div className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-muted/20">
+          <Label className="font-medium">Ventilation analytique obligatoire</Label>
           <Switch checked={requiresAnalytical} onCheckedChange={setRequiresAnalytical} />
         </div>
       </div>

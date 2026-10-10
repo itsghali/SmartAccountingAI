@@ -267,9 +267,9 @@ export default function NewEntryPage() {
   const selectedJournal = journals.find((j) => j.id === journalId);
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Nouvelle Écriture Comptable</h1>
+    <div className="p-6 max-w-7550 mx-auto animate-in fade-in duration-500">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary">Nouvelle Écriture Comptable</h1>
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -293,22 +293,24 @@ export default function NewEntryPage() {
       </div>
 
       {proposalSource && (
-        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+        <div className="mb-6 rounded-xl border border-primary/20 bg-primary/5 p-5 backdrop-blur-sm shadow-sm transition-all duration-300 hover:shadow-md">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <div className="flex items-center gap-2 text-blue-900">
-                <Sparkles className="h-4 w-4" />
-                <span className="font-medium">Pré-remplie depuis une proposition approuvée</span>
-                <Badge className="bg-blue-100 text-blue-700">{proposalSource.status}</Badge>
+              <div className="flex items-center gap-2 text-primary">
+                <Sparkles className="h-5 w-5" />
+                <span className="font-semibold">Pré-remplie depuis une proposition approuvée</span>
+                <Badge className="bg-primary/20 text-primary hover:bg-primary/30 border-none">{proposalSource.status}</Badge>
               </div>
-              <p className="mt-1 text-sm text-blue-800">
+              <p className="mt-2 text-sm text-muted-foreground">
                 Cette écriture reprend la proposition IA validée pour{" "}
-                {proposalSource.document?.originalFilename ?? "le document source"}.
+                <span className="font-medium text-foreground">{proposalSource.document?.originalFilename ?? "le document source"}</span>.
               </p>
             </div>
             {proposalSource.document && (
               <Link href={`/documents/${proposalSource.document.id}`}>
-                <Button variant="outline">Voir le document</Button>
+                <Button variant="outline" className="border-primary/20 text-primary hover:bg-primary/10 transition-colors">
+                  Voir le document
+                </Button>
               </Link>
             )}
           </div>
@@ -316,7 +318,7 @@ export default function NewEntryPage() {
       )}
 
       {/* Header fields */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8 p-6 bg-card/60 backdrop-blur-md border border-border/50 shadow-sm rounded-xl transition-all duration-300 hover:shadow-md">
         <div>
           <Label>Journal *</Label>
           <Select value={journalId} onValueChange={(v) => v !== null && setJournalId(v)}>
@@ -367,12 +369,13 @@ export default function NewEntryPage() {
         onChange={setLines}
       />
 
-      <div className="mt-4 text-sm text-gray-500">
-        <FileText className="h-4 w-4 inline mr-1" />
-        Raccourcis: <kbd className="px-1 bg-gray-100 rounded">Tab</kbd> navigation,{" "}
-        <kbd className="px-1 bg-gray-100 rounded">Enter</kbd> nouvelle ligne,{" "}
-        <kbd className="px-1 bg-gray-100 rounded">+</kbd> équilibrage auto,{" "}
-        <kbd className="px-1 bg-gray-100 rounded">F4</kbd> recherche compte
+      <div className="mt-6 text-sm text-muted-foreground flex items-center">
+        <FileText className="h-4 w-4 inline mr-2" />
+        <span>Raccourcis clavier :</span>
+        <kbd className="ml-2 px-1.5 py-0.5 bg-muted rounded-md font-mono text-xs text-foreground border border-border">Tab</kbd> <span className="ml-1 text-xs">navigation</span>
+        <kbd className="ml-3 px-1.5 py-0.5 bg-muted rounded-md font-mono text-xs text-foreground border border-border">Enter</kbd> <span className="ml-1 text-xs">nouvelle ligne</span>
+        <kbd className="ml-3 px-1.5 py-0.5 bg-muted rounded-md font-mono text-xs text-foreground border border-border">+</kbd> <span className="ml-1 text-xs">équilibrage auto</span>
+        <kbd className="ml-3 px-1.5 py-0.5 bg-muted rounded-md font-mono text-xs text-foreground border border-border">F4</kbd> <span className="ml-1 text-xs">recherche compte</span>
       </div>
     </div>
   );

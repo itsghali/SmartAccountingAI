@@ -130,10 +130,10 @@ export default function TrialBalancePage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-400 mx-auto animate-in fade-in duration-500">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Balance G\u00e9n\u00e9rale</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary">Balance G\u00e9n\u00e9rale</h1>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleExportCSV}>
             <Download className="h-4 w-4 mr-2" /> Exporter CSV
@@ -145,35 +145,35 @@ export default function TrialBalancePage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-4 mb-6 items-end">
+      <div className="flex flex-wrap gap-6 mb-8 p-6 bg-card/60 backdrop-blur-md border border-border/50 shadow-sm rounded-xl items-end transition-all duration-300 hover:shadow-md">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1.5">
             Date d\u00e9but
           </label>
           <Input
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="w-[160px]"
+            className="w-40"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1.5">
             Date fin
           </label>
           <Input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="w-[160px]"
+            className="w-40"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1.5">
             Statut
           </label>
           <Select value={filterStatus} onValueChange={(v) => v !== null && setFilterStatus(v)}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-45">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -184,7 +184,7 @@ export default function TrialBalancePage() {
           </Select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1.5">
             Recherche compte
           </label>
           <div className="relative">
@@ -193,7 +193,7 @@ export default function TrialBalancePage() {
               placeholder="Code ou libell\u00e9..."
               value={searchCode}
               onChange={(e) => setSearchCode(e.target.value)}
-              className="pl-9 w-[220px]"
+              className="pl-9 w-55"
             />
           </div>
         </div>
@@ -205,69 +205,69 @@ export default function TrialBalancePage() {
       </div>
 
       {/* Table */}
-      <div className="border rounded-lg overflow-hidden print:border-black">
+      <div className="bg-card/60 backdrop-blur-xl border border-border/50 rounded-xl overflow-hidden shadow-sm print:border-black print:bg-white transition-all duration-300 hover:shadow-md hover:border-primary/20">
         <table className="w-full">
-          <thead className="bg-gray-50 text-xs uppercase text-gray-500 print:bg-white print:text-black print:font-bold">
+          <thead className="bg-muted/50 text-xs uppercase text-muted-foreground border-b border-border/50 print:bg-white print:text-black print:font-bold">
             <tr>
-              <th className="p-3 text-left">Code</th>
-              <th className="p-3 text-left">Libell\u00e9</th>
-              <th className="p-3 text-right">Mouvement D\u00e9bit</th>
-              <th className="p-3 text-right">Mouvement Cr\u00e9dit</th>
-              <th className="p-3 text-right">Solde D\u00e9bit</th>
-              <th className="p-3 text-right">Solde Cr\u00e9dit</th>
+              <th className="p-4 text-left font-semibold">Code</th>
+              <th className="p-4 text-left font-semibold">Libell\u00e9</th>
+              <th className="p-4 text-right font-semibold">Mouvement D\u00e9bit</th>
+              <th className="p-4 text-right font-semibold">Mouvement Cr\u00e9dit</th>
+              <th className="p-4 text-right font-semibold">Solde D\u00e9bit</th>
+              <th className="p-4 text-right font-semibold">Solde Cr\u00e9dit</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="p-8 text-center text-gray-400">
+                <td colSpan={6} className="p-12 text-center text-muted-foreground font-medium animate-pulse">
                   Chargement...
                 </td>
               </tr>
             ) : filteredAccounts.length === 0 ? (
               <tr>
-                <td colSpan={6} className="p-8 text-center text-gray-400">
+                <td colSpan={6} className="p-12 text-center text-muted-foreground border-dashed border-border/50">
                   Aucun mouvement trouv\u00e9 pour la p\u00e9riode s\u00e9lectionn\u00e9e
                 </td>
               </tr>
             ) : (
               <>
                 {filteredAccounts.map((acc) => (
-                  <tr key={acc.code} className="border-t hover:bg-gray-50">
-                    <td className="p-3 font-mono text-sm font-medium text-blue-700">
+                  <tr key={acc.code} className="border-t border-border/50 hover:bg-muted/30 transition-colors">
+                    <td className="p-4 font-mono text-sm font-bold text-primary tracking-wide">
                       {acc.code}
                     </td>
-                    <td className="p-3 text-sm">{acc.label}</td>
-                    <td className="p-3 text-right font-mono text-sm">
+                    <td className="p-4 text-sm font-medium">{acc.label}</td>
+                    <td className="p-4 text-right font-mono text-sm text-muted-foreground">
                       {formatMAD(acc.totalDebit)}
                     </td>
-                    <td className="p-3 text-right font-mono text-sm">
+                    <td className="p-4 text-right font-mono text-sm text-muted-foreground">
                       {formatMAD(acc.totalCredit)}
                     </td>
-                    <td className="p-3 text-right font-mono text-sm">
+                    <td className="p-4 text-right font-mono text-sm font-medium text-foreground">
                       {parseFloat(acc.soldeDebit) > 0 ? formatMAD(acc.soldeDebit) : ""}
                     </td>
-                    <td className="p-3 text-right font-mono text-sm">
+                    <td className="p-4 text-right font-mono text-sm font-medium text-foreground">
                       {parseFloat(acc.soldeCredit) > 0 ? formatMAD(acc.soldeCredit) : ""}
                     </td>
                   </tr>
                 ))}
                 {/* Totals row */}
                 {totals && (
-                  <tr className="border-t-2 border-gray-800 bg-gray-100 font-bold print:bg-white">
-                    <td className="p-3 text-sm" colSpan={2}>
+                  <tr className="border-t-2 border-border bg-muted/30 font-bold print:bg-white">
+                    <td className="p-4 text-sm text-foreground" colSpan={2}>
                       TOTAUX
                     </td>
-                    <td className="p-3 text-right font-mono text-sm">
+                    <td className="p-4 text-right font-mono text-sm text-foreground">
                       {formatMAD(totals.totalDebit)}
                     </td>
-                    <td className="p-3 text-right font-mono text-sm">
+                    <td className="p-4 text-right font-mono text-sm text-foreground">
                       {formatMAD(totals.totalCredit)}
                     </td>
-                    <td className="p-3 text-right font-mono text-sm">
+                    <td className="p-4 text-right font-mono text-sm text-primary">
                       {formatMAD(totals.soldeDebit)}
                     </td>
-                    <td className="p-3 text-right font-mono text-sm">
+                    <td className="p-4 text-right font-mono text-sm text-primary">
                       {formatMAD(totals.soldeCredit)}
                     </td>
                   </tr>

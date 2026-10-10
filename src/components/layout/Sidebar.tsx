@@ -424,7 +424,7 @@ export default function Sidebar() {
 
         className={cn(
 
-          "fixed left-0 top-0 z-50 flex h-screen flex-col bg-slate-900 text-slate-300 transition-all duration-300",
+          "fixed left-0 top-0 z-50 flex h-screen flex-col bg-sidebar border-r border-sidebar-border text-sidebar-foreground transition-all duration-300",
 
           "lg:relative lg:z-auto",
 
@@ -440,11 +440,11 @@ export default function Sidebar() {
 
         {/* Brand area */}
 
-        <div className="flex h-14 items-center justify-between border-b border-slate-700 px-4">
+        <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4">
 
           {!collapsed && (
 
-            <span className="text-lg font-bold text-white">SmartAccountingAI</span>
+            <span className="text-lg font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary">SmartAccountingAI</span>
 
           )}
 
@@ -452,7 +452,7 @@ export default function Sidebar() {
 
             onClick={() => setCollapsed(!collapsed)}
 
-            className="rounded-md p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
+            className="rounded-md p-1.5 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
 
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
 
@@ -526,9 +526,9 @@ export default function Sidebar() {
 
                           "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
 
-                          "hover:bg-slate-800 hover:text-white",
+                          "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
 
-                          isChildActive(item) && "text-white"
+                          isChildActive(item) && "text-sidebar-primary font-bold"
 
                         )}
 
@@ -536,7 +536,7 @@ export default function Sidebar() {
 
                       >
 
-                        <span className="flex-shrink-0">{item.icon}</span>
+                        <span className="shrink-0">{item.icon}</span>
 
                         {!collapsed && (
 
@@ -568,7 +568,7 @@ export default function Sidebar() {
 
                       {!collapsed && isExpanded && (
 
-                        <ul className="ml-4 mt-0.5 space-y-0.5 border-l border-slate-700 pl-3">
+                        <ul className="ml-4 mt-0.5 space-y-0.5 border-l border-sidebar-border pl-3">
 
                           {item.children!.map((child) => (
 
@@ -582,19 +582,19 @@ export default function Sidebar() {
 
                                   "flex items-center gap-3 rounded-md px-3 py-1.5 text-sm transition-colors",
 
-                                  "hover:bg-slate-800 hover:text-white",
+                                  "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
 
                                   isActive(child.href)
 
-                                    ? "bg-slate-800 text-white font-medium"
+                                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
 
-                                    : "text-slate-400"
+                                    : "text-sidebar-foreground/70"
 
                                 )}
 
                               >
 
-                                <span className="flex-shrink-0">
+                                <span className="shrink-0">
 
                                   {child.icon}
 
@@ -624,13 +624,13 @@ export default function Sidebar() {
 
                         "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
 
-                        "hover:bg-slate-800 hover:text-white",
+                        "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
 
                         active
 
-                          ? "bg-slate-800 text-white"
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm"
 
-                          : "text-slate-400"
+                          : "text-sidebar-foreground/70"
 
                       )}
 
@@ -638,7 +638,7 @@ export default function Sidebar() {
 
                     >
 
-                      <span className="flex-shrink-0">{item.icon}</span>
+                      <span className="shrink-0">{item.icon}</span>
 
                       {!collapsed && <span>{item.label}</span>}
 
@@ -662,9 +662,9 @@ export default function Sidebar() {
 
         {!collapsed && (
 
-          <div className="border-t border-slate-700 px-4 py-3">
+          <div className="border-t border-sidebar-border px-4 py-3">
 
-            <p className="text-xs text-slate-500">SmartAccountingAI v0.1.0</p>
+            <p className="text-xs text-sidebar-foreground/50">SmartAccountingAI v0.1.0</p>
 
           </div>
 

@@ -102,9 +102,11 @@ export default function JournalsPage() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Journaux Comptables</h1>
+    <div className="p-6 max-w-5xl mx-auto animate-in fade-in duration-500">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary">
+          Journaux Comptables
+        </h1>
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
           <DialogTrigger>
             <Button><Plus className="h-4 w-4 mr-2" /> Nouveau journal</Button>
@@ -143,36 +145,38 @@ export default function JournalsPage() {
         </Dialog>
       </div>
 
-      <div className="border rounded-lg overflow-hidden">
+      <div className="bg-card/60 backdrop-blur-xl border border-border/50 rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/20">
         <table className="w-full">
-          <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+          <thead className="bg-muted/50 text-xs uppercase text-muted-foreground border-b border-border/50">
             <tr>
-              <th className="p-3 text-left">Code</th>
-              <th className="p-3 text-left">Libellé</th>
-              <th className="p-3 text-left">Type</th>
-              <th className="p-3 text-left">Compte contrepartie</th>
-              <th className="p-3 text-center">Système</th>
-              <th className="p-3 text-center">Actif</th>
+              <th className="p-4 text-left font-semibold">Code</th>
+              <th className="p-4 text-left font-semibold">Libellé</th>
+              <th className="p-4 text-left font-semibold">Type</th>
+              <th className="p-4 text-left font-semibold">Compte contrepartie</th>
+              <th className="p-4 text-center font-semibold">Système</th>
+              <th className="p-4 text-center font-semibold">Actif</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="p-8 text-center text-gray-400">Chargement...</td></tr>
+              <tr><td colSpan={6} className="p-12 text-center text-muted-foreground font-medium animate-pulse">Chargement...</td></tr>
+            ) : journals.length === 0 ? (
+              <tr><td colSpan={6} className="p-12 text-center text-muted-foreground border-dashed border-border/50">Aucun journal trouvé.</td></tr>
             ) : journals.map((journal) => (
-              <tr key={journal.id} className="border-t hover:bg-gray-50">
-                <td className="p-3 font-mono font-medium text-blue-700">{journal.code}</td>
-                <td className="p-3 text-sm">{journal.label}</td>
-                <td className="p-3 text-sm">
+              <tr key={journal.id} className="border-t border-border/50 hover:bg-muted/40 transition-colors">
+                <td className="p-4 font-mono font-bold text-primary tracking-wide">{journal.code}</td>
+                <td className="p-4 text-sm font-medium">{journal.label}</td>
+                <td className="p-4 text-sm">
                   <Badge variant="outline">{typeLabels[journal.type] || journal.type}</Badge>
                 </td>
-                <td className="p-3 font-mono text-sm text-gray-500">
+                <td className="p-4 font-mono text-sm text-muted-foreground">
                   {journal.defaultCounterpartAccountCode || "—"}
                 </td>
-                <td className="p-3 text-center">
-                  {journal.isSystem && <Badge variant="secondary">Système</Badge>}
+                <td className="p-4 text-center">
+                  {journal.isSystem && <Badge variant="secondary" className="bg-muted text-muted-foreground">Système</Badge>}
                 </td>
-                <td className="p-3 text-center">
-                  <span className={`h-2 w-2 rounded-full inline-block ${journal.isActive ? "bg-green-500" : "bg-gray-300"}`} />
+                <td className="p-4 text-center">
+                  <span className={`h-2.5 w-2.5 rounded-full inline-block shadow-sm ${journal.isActive ? "bg-emerald-500" : "bg-muted"}`} />
                 </td>
               </tr>
             ))}

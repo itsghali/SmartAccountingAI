@@ -155,10 +155,13 @@ export default function VATDeclarationsPage() {
   const periods = periodType === "MONTHLY" ? 12 : 4;
 
   return (
-    <div className="p-6 max-w-300 mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Déclarations TVA</h1>
-        <div className="flex gap-2">
+    <div className="p-6 max-w-7xl mx-auto animate-in fade-in duration-500">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary mb-1">Déclarations TVA</h1>
+          <p className="text-muted-foreground font-medium">Gestion et calcul des déclarations de TVA.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             onClick={computeAllPeriods}
@@ -182,9 +185,9 @@ export default function VATDeclarationsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Period list */}
         <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Périodes</CardTitle>
+          <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm overflow-hidden sticky top-6">
+            <CardHeader className="bg-muted/20 border-b border-border/50 pb-4">
+              <CardTitle className="text-lg font-semibold text-foreground">Périodes</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {Array.from({ length: periods }, (_, i) => {
@@ -197,8 +200,8 @@ export default function VATDeclarationsPage() {
                 return (
                   <button
                     key={idx}
-                    className={`w-full p-3 text-left border-b hover:bg-gray-50 flex items-center justify-between ${
-                      selectedDeclaration?.periodIndex === idx ? "bg-blue-50" : ""
+                    className={`w-full p-4 text-left border-b border-border/50 transition-colors flex items-center justify-between ${
+                      selectedDeclaration?.periodIndex === idx ? "bg-primary/5 border-l-4 border-l-primary" : "hover:bg-muted/40"
                     }`}
                     onClick={() => {
                       if (!decl || decl.status === "DRAFT" || decl.status === "COMPUTED") {
@@ -233,15 +236,15 @@ export default function VATDeclarationsPage() {
         {/* Declaration detail */}
         <div className="lg:col-span-2">
           {selectedDeclaration ? (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>
+            <Card className="bg-card/60 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden animate-in slide-in-from-right-4 duration-300">
+              <CardHeader className="bg-muted/20 border-b border-border/50 pb-4">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <CardTitle className="text-xl text-foreground">
                     {periodType === "MONTHLY"
                       ? monthNames[selectedDeclaration.periodIndex - 1]
                       : `Trimestre ${selectedDeclaration.periodIndex}`}
                   </CardTitle>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {(!selectedDeclaration.status || selectedDeclaration.status === "DRAFT" || selectedDeclaration.status === "COMPUTED") && (
                       <Button
                         variant="outline"
@@ -264,20 +267,24 @@ export default function VATDeclarationsPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-6">
                 {/* Output VAT */}
-                <div className="mb-6">
-                  <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">
-                    Chiffre d&apos;affaires &amp; TVA collectée
-                  </h3>
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b text-gray-500">
-                        <th className="py-2 text-left">Taux</th>
-                        <th className="py-2 text-right">Base HT</th>
-                        <th className="py-2 text-right">TVA</th>
-                      </tr>
-                    </thead>
+                <div className="mb-8">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="h-6 w-1 bg-primary rounded-full"></div>
+                    <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">
+                      Chiffre d&apos;affaires &amp; TVA collectée
+                    </h3>
+                  </div>
+                  <div className="rounded-md border border-border/50 overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50">
+                        <tr className="border-b border-border/50 text-muted-foreground">
+                          <th className="py-3 px-4 text-left font-semibold">Taux</th>
+                          <th className="py-3 px-4 text-right font-semibold">Base HT</th>
+                          <th className="py-3 px-4 text-right font-semibold">TVA</th>
+                        </tr>
+                      </thead>
                     <tbody>
                       {[
                         { label: "Ventes à 20%", ht: selectedDeclaration.taxableRevenue20, vat: selectedDeclaration.outputVAT20 },
@@ -285,57 +292,67 @@ export default function VATDeclarationsPage() {
                         { label: "Ventes à 10%", ht: selectedDeclaration.taxableRevenue10, vat: selectedDeclaration.outputVAT10 },
                         { label: "Ventes à 7%", ht: selectedDeclaration.taxableRevenue7, vat: selectedDeclaration.outputVAT7 },
                       ].map((row) => (
-                        <tr key={row.label} className="border-b">
-                          <td className="py-2">{row.label}</td>
-                          <td className="py-2 text-right font-mono">{formatMAD(row.ht)}</td>
-                          <td className="py-2 text-right font-mono">{formatMAD(row.vat)}</td>
+                        <tr key={row.label} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
+                          <td className="py-3 px-4 text-foreground font-medium">{row.label}</td>
+                          <td className="py-3 px-4 text-right font-mono text-muted-foreground">{formatMAD(row.ht)}</td>
+                          <td className="py-3 px-4 text-right font-mono text-foreground">{formatMAD(row.vat)}</td>
                         </tr>
                       ))}
-                      <tr className="font-semibold bg-gray-50">
-                        <td className="py-2">Total TVA collectée</td>
-                        <td className="py-2"></td>
-                        <td className="py-2 text-right font-mono">{formatMAD(selectedDeclaration.totalOutputVAT)}</td>
+                      <tr className="font-bold bg-muted/30">
+                        <td className="py-3 px-4 text-foreground">Total TVA collectée</td>
+                        <td className="py-3 px-4"></td>
+                        <td className="py-3 px-4 text-right font-mono text-primary">{formatMAD(selectedDeclaration.totalOutputVAT)}</td>
                       </tr>
                     </tbody>
                   </table>
+                  </div>
                 </div>
 
                 {/* Input VAT */}
-                <div className="mb-6">
-                  <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">
-                    TVA déductible
-                  </h3>
+                <div className="mb-8">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="h-6 w-1 bg-secondary rounded-full"></div>
+                    <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">
+                      TVA déductible
+                    </h3>
+                  </div>
+                  <div className="rounded-md border border-border/50 overflow-hidden">
                   <table className="w-full text-sm">
                     <tbody>
-                      <tr className="border-b">
-                        <td className="py-2">Sur immobilisations</td>
-                        <td className="py-2 text-right font-mono">{formatMAD(selectedDeclaration.inputVATAssets)}</td>
+                      <tr className="border-b border-border/50 hover:bg-muted/20 transition-colors">
+                        <td className="py-3 px-4 text-foreground font-medium">Sur immobilisations</td>
+                        <td className="py-3 px-4 text-right font-mono text-foreground">{formatMAD(selectedDeclaration.inputVATAssets)}</td>
                       </tr>
-                      <tr className="border-b">
-                        <td className="py-2">Sur charges</td>
-                        <td className="py-2 text-right font-mono">{formatMAD(selectedDeclaration.inputVATExpenses)}</td>
+                      <tr className="border-b border-border/50 hover:bg-muted/20 transition-colors">
+                        <td className="py-3 px-4 text-foreground font-medium">Sur charges</td>
+                        <td className="py-3 px-4 text-right font-mono text-foreground">{formatMAD(selectedDeclaration.inputVATExpenses)}</td>
                       </tr>
-                      <tr className="border-b">
-                        <td className="py-2">Crédit reporté</td>
-                        <td className="py-2 text-right font-mono">{formatMAD(selectedDeclaration.previousCredit)}</td>
+                      <tr className="border-b border-border/50 hover:bg-muted/20 transition-colors">
+                        <td className="py-3 px-4 text-foreground font-medium">Crédit reporté</td>
+                        <td className="py-3 px-4 text-right font-mono text-emerald-600">{formatMAD(selectedDeclaration.previousCredit)}</td>
                       </tr>
-                      <tr className="font-semibold bg-gray-50">
-                        <td className="py-2">Total TVA déductible</td>
-                        <td className="py-2 text-right font-mono">{formatMAD(selectedDeclaration.totalInputVAT)}</td>
+                      <tr className="font-bold bg-muted/30">
+                        <td className="py-3 px-4 text-foreground">Total TVA déductible</td>
+                        <td className="py-3 px-4 text-right font-mono text-secondary">{formatMAD(selectedDeclaration.totalInputVAT)}</td>
                       </tr>
                     </tbody>
                   </table>
+                  </div>
                 </div>
 
                 {/* Net */}
-                <div className={`p-4 rounded-lg text-center ${
-                  selectedDeclaration.isCredit ? "bg-green-50" : "bg-red-50"
+                <div className={`p-6 rounded-xl text-center border shadow-sm ${
+                  selectedDeclaration.isCredit 
+                    ? "bg-emerald-500/10 border-emerald-500/20" 
+                    : "bg-red-500/10 border-red-500/20"
                 }`}>
-                  <p className="text-sm text-gray-600 mb-1">
-                    {selectedDeclaration.isCredit ? "Crédit de TVA" : "TVA due"}
+                  <p className={`text-sm font-medium mb-2 ${
+                    selectedDeclaration.isCredit ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"
+                  }`}>
+                    {selectedDeclaration.isCredit ? "Crédit de TVA reportable" : "TVA due à payer"}
                   </p>
-                  <p className={`text-3xl font-bold font-mono ${
-                    selectedDeclaration.isCredit ? "text-green-700" : "text-red-700"
+                  <p className={`text-4xl font-bold font-mono tracking-tight ${
+                    selectedDeclaration.isCredit ? "text-emerald-600 dark:text-emerald-500" : "text-red-600 dark:text-red-500"
                   }`}>
                     {formatMAD(selectedDeclaration.netVAT)} MAD
                   </p>
@@ -343,12 +360,12 @@ export default function VATDeclarationsPage() {
               </CardContent>
             </Card>
           ) : (
-            <Card>
-              <CardContent className="flex items-center justify-center h-64 text-gray-400">
-                <div className="text-center">
-                  <Calculator className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p>Sélectionnez une période pour voir ou calculer la déclaration TVA</p>
+            <Card className="bg-card/60 backdrop-blur-md border border-dashed border-border/50 shadow-sm">
+              <CardContent className="flex flex-col items-center justify-center h-125 text-muted-foreground gap-4">
+                <div className="p-4 bg-muted/50 rounded-full">
+                  <Calculator className="h-12 w-12 text-primary/50" />
                 </div>
+                <p className="text-center font-medium">Sélectionnez une période dans la liste <br />pour voir ou calculer la déclaration TVA</p>
               </CardContent>
             </Card>
           )}

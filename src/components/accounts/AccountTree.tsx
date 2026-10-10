@@ -86,8 +86,8 @@ function TreeNodeItem({
   return (
     <>
       <div
-        className={`flex items-center py-1.5 px-2 cursor-pointer hover:bg-blue-50 rounded text-sm ${
-          isSelected ? "bg-blue-100" : ""
+        className={`flex items-center py-2 px-2 cursor-pointer transition-colors rounded-md text-sm ${
+          isSelected ? "bg-primary/10" : "hover:bg-primary/5"
         }`}
         style={{ paddingLeft: `${level * 20 + 8}px` }}
         onClick={() => onSelect(node.account)}
@@ -98,28 +98,28 @@ function TreeNodeItem({
               e.stopPropagation();
               toggleExpand(node.account.code);
             }}
-            className="mr-1 p-0.5 hover:bg-gray-200 rounded"
+            className="mr-1.5 p-1 hover:bg-muted rounded-md transition-colors"
           >
             {isExpanded ? (
-              <ChevronDown className="h-3.5 w-3.5 text-gray-500" />
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
             ) : (
-              <ChevronRight className="h-3.5 w-3.5 text-gray-500" />
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
             )}
           </button>
         ) : (
-          <span className="w-5" />
+          <span className="w-6" />
         )}
-        <span className={`font-mono font-medium mr-2 ${getClassColor(node.account.classNumber)}`}>
+        <span className={`font-mono font-bold mr-3 ${getClassColor(node.account.classNumber)}`}>
           {node.account.code}
         </span>
-        <span className="text-gray-700 truncate">{node.account.label}</span>
+        <span className="text-foreground font-medium truncate">{node.account.label}</span>
         {node.account.isTiers && (
-          <span className="ml-2 text-xs bg-orange-100 text-orange-600 px-1.5 rounded">
+          <span className="ml-3 text-[10px] uppercase tracking-wider font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full">
             Tiers
           </span>
         )}
         {!node.account.isActive && (
-          <span className="ml-2 text-xs bg-gray-100 text-gray-500 px-1.5 rounded">
+          <span className="ml-2 text-[10px] uppercase tracking-wider font-semibold bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
             Inactif
           </span>
         )}
@@ -167,14 +167,14 @@ export function AccountTree({ accounts, onSelect, selectedCode }: AccountTreePro
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-3 border-b">
+      <div className="p-4 border-b border-border/50 bg-muted/10">
         <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Rechercher par code ou libellé..."
-            className="pl-8"
+            className="pl-9 bg-card/50 border-border/50"
           />
         </div>
       </div>

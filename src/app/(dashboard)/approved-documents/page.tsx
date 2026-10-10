@@ -166,10 +166,12 @@ export default function ApprovedDocumentsPage() {
 
   if (!currentCompanyId) {
     return (
-      <div className="p-6">
-        <div className="rounded-lg border border-dashed p-10 text-center">
-          <ShieldCheck className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-          <h1 className="text-xl font-semibold">Approved Documents</h1>
+      <div className="p-6 max-w-7xl mx-auto animate-in fade-in duration-500">
+        <div className="rounded-xl border border-dashed border-border/50 bg-card/30 backdrop-blur-sm p-12 text-center max-w-2xl mx-auto mt-12">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted/50 mb-6">
+            <ShieldCheck className="h-10 w-10 text-muted-foreground" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">Approved Documents</h1>
           <p className="mt-2 text-muted-foreground">
             Select a company from the header to view validated documents.
           </p>
@@ -179,16 +181,16 @@ export default function ApprovedDocumentsPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-8 p-6 max-w-7xl mx-auto animate-in fade-in duration-500">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Approved Documents</h1>
-          <p className="text-muted-foreground">
-            Human-validated documents for {currentCompany?.name ?? "the selected company"}.
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary mb-1">Approved Documents</h1>
+          <p className="text-muted-foreground font-medium">
+            Human-validated documents for <span className="text-foreground/80">{currentCompany?.name ?? "the selected company"}</span>.
           </p>
         </div>
 
-        <div className="relative min-w-[240px]">
+        <div className="relative min-w-60">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="pl-9"
@@ -199,55 +201,60 @@ export default function ApprovedDocumentsPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Total Approved
             </CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-between gap-3">
-            <div className="text-2xl font-semibold text-green-700">
+            <div className="text-3xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
               {filteredDocuments.length}
             </div>
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <div className="p-2 bg-emerald-500/10 rounded-full">
+              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+            </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Approved Today
             </CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-between gap-3">
-            <div className="text-2xl font-semibold text-slate-900">{approvedToday}</div>
-            <CalendarClock className="h-5 w-5 text-slate-500" />
+            <div className="text-3xl font-bold font-mono text-foreground">{approvedToday}</div>
+            <div className="p-2 bg-primary/10 rounded-full">
+              <CalendarClock className="h-5 w-5 text-primary/70" />
+            </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Reviewed Fields
             </CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-between gap-3">
-            <div className="text-2xl font-semibold text-slate-900">{reviewedFieldCount}</div>
-            <FileStack className="h-5 w-5 text-slate-500" />
+            <div className="text-3xl font-bold font-mono text-foreground">{reviewedFieldCount}</div>
+            <div className="p-2 bg-purple-500/10 rounded-full">
+              <FileStack className="h-5 w-5 text-purple-500" />
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader className="flex flex-col gap-2 border-b pb-4 lg:flex-row lg:items-center lg:justify-between">
+      <Card className="bg-card/60 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden">
+        <CardHeader className="flex flex-col gap-2 border-b border-border/50 bg-muted/20 pb-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <CardTitle>Validated Archive</CardTitle>
+            <CardTitle className="text-xl">Validated Archive</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
               Approved documents live here after review so the Documents screen stays action-focused.
             </p>
           </div>
-          <Badge className="bg-slate-100 text-slate-700">
-            {filteredDocuments.length} approved document
-            {filteredDocuments.length === 1 ? "" : "s"}
+          <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
+            {filteredDocuments.length} approved document{filteredDocuments.length === 1 ? "" : "s"}
           </Badge>
         </CardHeader>
         <CardContent className="p-0">
@@ -269,23 +276,23 @@ export default function ApprovedDocumentsPage() {
             </div>
           ) : (
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Document</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Approved At</TableHead>
-                  <TableHead>Approved By</TableHead>
-                  <TableHead>Reviewed Fields</TableHead>
-                  <TableHead>Tax Determination</TableHead>
-                  <TableHead>Entry Proposal</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+              <TableHeader className="bg-muted/50">
+                <TableRow className="border-border/50">
+                  <TableHead className="font-semibold">Document</TableHead>
+                  <TableHead className="font-semibold">Type</TableHead>
+                  <TableHead className="font-semibold">Approved At</TableHead>
+                  <TableHead className="font-semibold">Approved By</TableHead>
+                  <TableHead className="font-semibold">Reviewed Fields</TableHead>
+                  <TableHead className="font-semibold">Tax Determination</TableHead>
+                  <TableHead className="font-semibold">Entry Proposal</TableHead>
+                  <TableHead className="text-right font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredDocuments.map((document) => (
-                  <TableRow key={document.id}>
+                  <TableRow key={document.id} className="border-border/50 hover:bg-muted/40 transition-colors">
                     <TableCell className="max-w-[320px] whitespace-normal">
-                      <div className="font-medium">{document.originalFilename}</div>
+                      <div className="font-medium text-foreground">{document.originalFilename}</div>
                       <div className="text-xs text-muted-foreground">
                         Uploaded {formatDateTime(document.createdAt)}
                       </div>

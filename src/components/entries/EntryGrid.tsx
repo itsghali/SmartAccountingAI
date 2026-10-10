@@ -99,25 +99,25 @@ export function EntryGrid({ companyId, lines, onChange, readOnly = false }: Entr
   );
 
   return (
-    <div ref={gridRef} className="border rounded-lg overflow-hidden">
+    <div ref={gridRef} className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm rounded-xl overflow-hidden transition-all duration-300">
       {/* Header */}
-      <div className="grid grid-cols-[40px_1fr_180px_2fr_140px_140px_40px] bg-gray-50 border-b text-xs font-semibold text-gray-600 uppercase">
-        <div className="p-2 text-center">#</div>
-        <div className="p-2">Compte</div>
-        <div className="p-2" />
-        <div className="p-2">Libellé</div>
-        <div className="p-2 text-right">Débit</div>
-        <div className="p-2 text-right">Crédit</div>
-        <div className="p-2" />
+      <div className="grid grid-cols-[40px_1fr_180px_2fr_140px_140px_40px] bg-muted/50 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase">
+        <div className="p-3 text-center">#</div>
+        <div className="p-3">Compte</div>
+        <div className="p-3" />
+        <div className="p-3">Libellé</div>
+        <div className="p-3 text-right">Débit</div>
+        <div className="p-3 text-right">Crédit</div>
+        <div className="p-3" />
       </div>
 
       {/* Lines */}
       {lines.map((line, index) => (
         <div
           key={line.id}
-          className="grid grid-cols-[40px_1fr_180px_2fr_140px_140px_40px] border-b hover:bg-blue-50/30 items-center"
+          className="grid grid-cols-[40px_1fr_180px_2fr_140px_140px_40px] border-b border-border/50 hover:bg-muted/30 transition-colors items-center"
         >
-          <div className="p-2 text-center text-xs text-gray-400">{line.lineNumber}</div>
+          <div className="p-2 text-center text-xs text-muted-foreground font-medium">{line.lineNumber}</div>
           <div className="p-1">
             <AccountSearch
               companyId={companyId}
@@ -131,9 +131,9 @@ export function EntryGrid({ companyId, lines, onChange, readOnly = false }: Entr
               onKeyDown={(e) => handleKeyDown(e, index, "account")}
             />
           </div>
-          <div className="p-1 text-xs text-gray-500 truncate">
+          <div className="p-1 text-xs text-muted-foreground truncate">
             {line.accountCode && !readOnly && (
-              <span className="text-gray-400">
+              <span className="text-muted-foreground/70">
                 {lines[index]?.accountCode ? "" : ""}
               </span>
             )}
@@ -169,7 +169,7 @@ export function EntryGrid({ companyId, lines, onChange, readOnly = false }: Entr
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 w-7 p-0 text-gray-400 hover:text-red-500"
+                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                 onClick={() => removeLine(index)}
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -181,26 +181,26 @@ export function EntryGrid({ companyId, lines, onChange, readOnly = false }: Entr
 
       {/* Add line button */}
       {!readOnly && (
-        <div className="p-2 border-b">
-          <Button variant="ghost" size="sm" onClick={addLine} className="text-blue-600">
+        <div className="p-3 border-b border-border/50 bg-card/40">
+          <Button variant="ghost" size="sm" onClick={addLine} className="text-primary hover:text-primary hover:bg-primary/10 transition-colors">
             <Plus className="h-4 w-4 mr-1" /> Ajouter une ligne
           </Button>
         </div>
       )}
 
       {/* Totals */}
-      <div className="grid grid-cols-[40px_1fr_180px_2fr_140px_140px_40px] bg-gray-50 font-semibold">
-        <div className="p-2" />
-        <div className="p-2" />
-        <div className="p-2" />
-        <div className="p-2 text-right text-sm">TOTAUX</div>
-        <div className="p-2 text-right font-mono text-sm">{formatMAD(totalDebit)}</div>
-        <div className="p-2 text-right font-mono text-sm">{formatMAD(totalCredit)}</div>
-        <div className="p-2" />
+      <div className="grid grid-cols-[40px_1fr_180px_2fr_140px_140px_40px] bg-muted/50 font-semibold border-b border-border/50">
+        <div className="p-3" />
+        <div className="p-3" />
+        <div className="p-3" />
+        <div className="p-3 text-right text-sm text-foreground">TOTAUX</div>
+        <div className="p-3 text-right font-mono text-sm text-foreground">{formatMAD(totalDebit)}</div>
+        <div className="p-3 text-right font-mono text-sm text-foreground">{formatMAD(totalCredit)}</div>
+        <div className="p-3" />
       </div>
 
       {/* Balance indicator */}
-      <div className={`p-2 text-center text-sm font-medium ${isBalanced ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
+      <div className={`p-4 text-center text-sm font-bold tracking-wide ${isBalanced ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-destructive/10 text-destructive"}`}>
         {isBalanced ? (
           "ÉQUILIBRÉ"
         ) : (

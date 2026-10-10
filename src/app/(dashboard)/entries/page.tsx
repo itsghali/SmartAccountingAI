@@ -128,9 +128,11 @@ export default function EntriesPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Écritures Comptables</h1>
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary">
+          Écritures Comptables
+        </h1>
         <Link href="/entries/new">
           <Button>
             <Plus className="h-4 w-4 mr-2" /> Nouvelle Écriture
@@ -173,15 +175,15 @@ export default function EntriesPage() {
           </SelectContent>
         </Select>
 
-        <div className="text-sm text-gray-500 self-center ml-auto">
+        <div className="text-sm font-medium text-muted-foreground self-center ml-auto">
           {total} écriture(s)
         </div>
       </div>
 
       {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+      <div className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm rounded-xl overflow-hidden transition-all duration-300 hover:shadow-md">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/50 text-xs uppercase text-muted-foreground font-semibold border-b border-border/50">
             <tr>
               <th className="p-3 text-left">Journal</th>
               <th className="p-3 text-left">N°</th>
@@ -209,15 +211,15 @@ export default function EntriesPage() {
               </tr>
             ) : (
               entries.map((entry) => (
-                <tr key={entry.id} className="border-t hover:bg-gray-50">
-                  <td className="p-3 font-mono text-sm font-medium text-blue-700">
+                <tr key={entry.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                  <td className="p-3 font-mono text-sm font-semibold text-primary">
                     {entry.journal.code}
                   </td>
                   <td className="p-3 font-mono text-sm">{entry.entryNumber}</td>
-                  <td className="p-3 text-sm font-mono">{formatMonth(entry.entryDate)}</td>
-                  <td className="p-3 text-sm">{entry.description}</td>
-                  <td className="p-3 text-sm text-gray-500">{entry.piece || entry.reference || "—"}</td>
-                  <td className="p-3 text-right font-mono text-sm">
+                  <td className="p-3 text-sm font-mono text-muted-foreground">{formatMonth(entry.entryDate)}</td>
+                  <td className="p-3 text-sm font-medium">{entry.description}</td>
+                  <td className="p-3 text-sm text-muted-foreground">{entry.piece || entry.reference || "—"}</td>
+                  <td className="p-3 text-right font-mono text-sm font-medium">
                     {formatMAD(entry.totalDebit)}
                   </td>
                   <td className="p-3 text-right font-mono text-sm">
@@ -265,21 +267,23 @@ export default function EntriesPage() {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between mt-4">
+      <div className="flex items-center justify-between mt-4 bg-card/40 backdrop-blur-sm p-4 rounded-xl border border-border/50">
         <Button 
           variant="outline" 
           disabled={page <= 1}
           onClick={() => setPage(p => p - 1)}
+          className="hover:bg-primary hover:text-primary-foreground transition-colors"
         >
           Précédent
         </Button>
-        <div className="text-sm text-gray-500">
-          Page {page} sur {Math.max(1, Math.ceil(total / 50))}
+        <div className="text-sm font-medium text-muted-foreground">
+          Page <span className="text-foreground">{page}</span> sur <span className="text-foreground">{Math.max(1, Math.ceil(total / 50))}</span>
         </div>
         <Button 
           variant="outline" 
           disabled={page >= Math.ceil(total / 50)}
           onClick={() => setPage(p => p + 1)}
+          className="hover:bg-primary hover:text-primary-foreground transition-colors"
         >
           Suivant
         </Button>

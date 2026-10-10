@@ -136,10 +136,12 @@ export default function PayrollPage() {
 
   if (!companyId) {
     return (
-      <div className="p-6">
-        <div className="rounded-lg border border-dashed p-10 text-center">
-          <ShieldCheck className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-          <h1 className="text-xl font-semibold">Gestion de Paie</h1>
+      <div className="p-6 max-w-7xl mx-auto animate-in fade-in duration-500">
+        <div className="rounded-xl border border-dashed border-border/50 bg-card/30 backdrop-blur-sm p-12 text-center max-w-2xl mx-auto mt-12">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted/50 mb-6">
+            <ShieldCheck className="h-10 w-10 text-muted-foreground" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">Gestion de Paie</h1>
           <p className="mt-2 text-muted-foreground">
             Sélectionnez une société pour accéder au module de paie.
           </p>
@@ -150,10 +152,12 @@ export default function PayrollPage() {
 
   if (!currentFiscalYearId) {
     return (
-      <div className="p-6">
-        <div className="rounded-lg border border-dashed p-10 text-center">
-          <ShieldCheck className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-          <h1 className="text-xl font-semibold">Gestion de Paie</h1>
+      <div className="p-6 max-w-7xl mx-auto animate-in fade-in duration-500">
+        <div className="rounded-xl border border-dashed border-border/50 bg-card/30 backdrop-blur-sm p-12 text-center max-w-2xl mx-auto mt-12">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted/50 mb-6">
+            <ShieldCheck className="h-10 w-10 text-muted-foreground" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">Gestion de Paie</h1>
           <p className="mt-2 text-muted-foreground">
             Sélectionnez un exercice pour afficher les analyses de paie.
           </p>
@@ -171,12 +175,14 @@ export default function PayrollPage() {
   const totalAlerts = analysisResult?.suggestions.length ?? pendingSuggestions.length;
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-8 p-6 max-w-7xl mx-auto animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Gestion de Paie</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary mb-1">
+            Gestion de Paie
+          </h1>
+          <p className="text-muted-foreground font-medium">
             Agent 4 — Détection d&apos;anomalies et exceptions de paie
           </p>
         </div>
@@ -213,98 +219,112 @@ export default function PayrollPage() {
       )}
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
+      <div className="grid gap-6 md:grid-cols-4">
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Analyses</CardTitle>
-            <FileSearch className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 bg-primary/10 rounded-full">
+              <FileSearch className="h-4 w-4 text-primary" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{agentRuns.length}</div>
-            <p className="text-xs text-muted-foreground">Exécutions de l&apos;agent</p>
+            <div className="text-3xl font-bold font-mono">{agentRuns.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">Exécutions de l&apos;agent</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Anomalies Critiques</CardTitle>
-            <AlertCircle className="h-4 w-4 text-red-500" />
+            <div className="p-2 bg-red-500/10 rounded-full">
+              <AlertCircle className="h-4 w-4 text-red-500" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{criticalCount || "-"}</div>
-            <p className="text-xs text-muted-foreground">Attention immédiate</p>
+            <div className="text-3xl font-bold font-mono text-red-600 dark:text-red-400">{criticalCount || "-"}</div>
+            <p className="text-xs text-muted-foreground mt-1">Attention immédiate</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Anomalies Élevées</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-orange-500" />
+            <div className="p-2 bg-orange-500/10 rounded-full">
+              <AlertTriangle className="h-4 w-4 text-orange-500" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{highCount || "-"}</div>
-            <p className="text-xs text-muted-foreground">À vérifier avant validation</p>
+            <div className="text-3xl font-bold font-mono text-orange-600 dark:text-orange-400">{highCount || "-"}</div>
+            <p className="text-xs text-muted-foreground mt-1">À vérifier avant validation</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Alertes Totales</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 bg-blue-500/10 rounded-full">
+              <Users className="h-4 w-4 text-blue-500" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalAlerts || "-"}</div>
-            <p className="text-xs text-muted-foreground">Suggestions en attente</p>
+            <div className="text-3xl font-bold font-mono">{totalAlerts || "-"}</div>
+            <p className="text-xs text-muted-foreground mt-1">Suggestions en attente</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Analysis Results */}
       {analysisResult && (
-        <Card>
-          <CardHeader>
+        <Card className="bg-card/60 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden">
+          <CardHeader className="bg-muted/30 border-b border-border/50">
             <CardTitle>Résultats de l&apos;analyse</CardTitle>
             <p className="text-sm text-muted-foreground">{analysisResult.summary}</p>
-            <p className="text-xs text-muted-foreground">
-              Modèle : {analysisResult.modelVersion} · Durée : {analysisResult.durationMs}ms
+            <p className="text-xs text-muted-foreground mt-2 font-mono">
+              Modèle : <span className="text-primary">{analysisResult.modelVersion}</span> · Durée : {analysisResult.durationMs}ms
             </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {analysisResult.suggestions.length === 0 ? (
-              <Card className="border-green-200 bg-green-50">
-                <CardContent className="flex items-center gap-3 pt-6">
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
-                  <div>
-                    <p className="font-medium text-green-900">Aucune anomalie détectée</p>
-                    <p className="text-sm text-green-700">
-                      L&apos;analyse n&apos;a pas identifié d&apos;exceptions dans les données de paie.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="p-8">
+                <Card className="border-emerald-200/50 bg-emerald-50/50 dark:bg-emerald-950/20 backdrop-blur-md shadow-sm">
+                  <CardContent className="flex items-center gap-4 pt-6">
+                    <div className="p-3 bg-emerald-100 dark:bg-emerald-900/50 rounded-full">
+                      <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div>
+                      <p className="text-lg font-semibold text-emerald-900 dark:text-emerald-300">Aucune anomalie détectée</p>
+                      <p className="text-emerald-700 dark:text-emerald-400">
+                        L&apos;analyse n&apos;a pas identifié d&apos;exceptions dans les données de paie.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             ) : (
               <Table>
-                <TableHeader>
+                <TableHeader className="bg-muted/50">
                   <TableRow>
-                    <TableHead>Sévérité</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Employé</TableHead>
-                    <TableHead>Action suggérée</TableHead>
-                    <TableHead>Confiance</TableHead>
+                    <TableHead className="font-semibold">Sévérité</TableHead>
+                    <TableHead className="font-semibold">Type</TableHead>
+                    <TableHead className="font-semibold">Description</TableHead>
+                    <TableHead className="font-semibold">Employé</TableHead>
+                    <TableHead className="font-semibold">Action suggérée</TableHead>
+                    <TableHead className="font-semibold">Confiance</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {analysisResult.suggestions.map((s, i) => (
-                    <TableRow key={i}>
+                    <TableRow key={i} className="hover:bg-muted/40 transition-colors border-border/50">
                       <TableCell>{severityBadge(s.severity)}</TableCell>
                       <TableCell className="font-medium">{s.type}</TableCell>
-                      <TableCell className="max-w-[300px] whitespace-normal">{s.description}</TableCell>
-                      <TableCell>{s.affectedEmployee ?? "-"}</TableCell>
-                      <TableCell className="max-w-[250px] whitespace-normal text-xs text-muted-foreground">
+                      <TableCell className="max-w-75 whitespace-normal text-muted-foreground">{s.description}</TableCell>
+                      <TableCell className="font-medium">{s.affectedEmployee ?? "-"}</TableCell>
+                      <TableCell className="max-w-62.5 whitespace-normal text-sm text-muted-foreground bg-muted/20">
                         {s.suggestedAction}
                       </TableCell>
-                      <TableCell>{Math.round(s.confidence * 100)}%</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="bg-background">{Math.round(s.confidence * 100)}%</Badge>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -315,57 +335,59 @@ export default function PayrollPage() {
       )}
 
       {/* Run History */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+      <Card className="bg-card/60 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between bg-muted/30 border-b border-border/50">
           <div>
             <CardTitle>Historique des analyses</CardTitle>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground mt-1">
               Exécutions précédentes de l&apos;Agent 4
             </p>
           </div>
-          <Badge variant="outline">{agentRuns.length} exécution(s)</Badge>
+          <Badge variant="outline" className="bg-background">{agentRuns.length} exécution(s)</Badge>
         </CardHeader>
         <CardContent className="p-0">
           {isLoadingRuns ? (
-            <div className="p-6 text-sm text-muted-foreground">Chargement...</div>
+            <div className="p-12 text-center text-muted-foreground font-medium animate-pulse">Chargement...</div>
           ) : agentRuns.length === 0 ? (
-            <div className="p-10 text-center">
-              <Clock className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-              <h2 className="text-lg font-semibold">Aucune analyse effectuée</h2>
-              <p className="mt-2 text-sm text-muted-foreground">
+            <div className="p-16 text-center">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted/50 mb-6">
+                <Clock className="h-10 w-10 text-muted-foreground" />
+              </div>
+              <h2 className="text-xl font-medium text-foreground">Aucune analyse effectuée</h2>
+              <p className="mt-2 text-muted-foreground">
                 Lancez une analyse pour détecter les anomalies de paie.
               </p>
             </div>
           ) : (
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-muted/50">
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Modèle</TableHead>
-                  <TableHead>Durée</TableHead>
+                  <TableHead className="font-semibold">Date</TableHead>
+                  <TableHead className="font-semibold">Statut</TableHead>
+                  <TableHead className="font-semibold">Modèle</TableHead>
+                  <TableHead className="font-semibold">Durée</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {agentRuns.map((run) => (
-                  <TableRow key={run.id}>
-                    <TableCell>{formatDateTime(run.createdAt)}</TableCell>
+                  <TableRow key={run.id} className="hover:bg-muted/40 transition-colors border-border/50">
+                    <TableCell className="text-muted-foreground">{formatDateTime(run.createdAt)}</TableCell>
                     <TableCell>
                       <Badge
                         variant="outline"
                         className={
                           run.status === "COMPLETED"
-                            ? "bg-green-100 text-green-700"
+                            ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800"
                             : run.status === "FAILED"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-amber-100 text-amber-700"
+                              ? "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800"
+                              : "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800"
                         }
                       >
                         {run.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{run.modelVersion}</TableCell>
-                    <TableCell>{run.durationMs ? `${run.durationMs}ms` : "-"}</TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{run.modelVersion}</TableCell>
+                    <TableCell className="font-mono text-sm">{run.durationMs ? `${run.durationMs}ms` : "-"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -376,24 +398,26 @@ export default function PayrollPage() {
 
       {/* Info Card */}
       {!analysisResult && !analyzeMutation.isPending && (
-        <Card className="bg-muted/50">
+        <Card className="bg-primary/5 border-primary/20 backdrop-blur-md shadow-sm">
           <CardContent className="pt-6">
             <div className="flex items-start gap-4">
-              <Users className="h-8 w-8 shrink-0 text-primary" />
+              <div className="p-3 bg-primary/10 rounded-full shrink-0">
+                <Users className="h-6 w-6 text-primary" />
+              </div>
               <div className="space-y-2">
-                <h3 className="font-semibold">Agent 4 — Payroll Support</h3>
+                <h3 className="font-semibold text-foreground text-lg">Agent 4 — Payroll Support</h3>
                 <p className="text-sm text-muted-foreground">
                   Cet agent assiste la préparation de la paie en détectant les anomalies
                   et exceptions sans effectuer les calculs finaux. Il analyse :
                 </p>
-                <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1.5 ml-1">
                   <li>Variations de salaire anormales</li>
                   <li>Heures supplémentaires inhabituelles</li>
                   <li>Écarts de net à payer par rapport aux périodes précédentes</li>
                   <li>Incohérences dans les cotisations (CNSS, AMO, IGR)</li>
                   <li>Données manquantes ou duplications</li>
                 </ul>
-                <p className="text-sm text-muted-foreground mt-2">
+                <p className="text-sm text-muted-foreground mt-4 font-medium border-t border-primary/10 pt-3">
                   Les calculs de paie officiels restent sous le contrôle du moteur déterministe.
                 </p>
               </div>

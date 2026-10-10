@@ -139,10 +139,10 @@ export default function GeneralLedgerPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-400 mx-auto animate-in fade-in duration-500">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Grand Livre</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary">Grand Livre</h1>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleExportCSV}>
             <Download className="h-4 w-4 mr-2" /> Exporter CSV
@@ -154,38 +154,38 @@ export default function GeneralLedgerPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-4 mb-6 items-end">
+      <div className="flex flex-wrap gap-6 mb-8 p-6 bg-card/60 backdrop-blur-md border border-border/50 shadow-sm rounded-xl items-end transition-all duration-300 hover:shadow-md">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1.5">
             Date d\u00e9but
           </label>
           <Input
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="w-[160px]"
+            className="w-40"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1.5">
             Date fin
           </label>
           <Input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="w-[160px]"
+            className="w-40"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1.5">
             Compte (code)
           </label>
           <Input
             placeholder="Ex: 6111"
             value={accountCodeFilter}
             onChange={(e) => setAccountCodeFilter(e.target.value)}
-            className="w-[160px]"
+            className="w-40"
           />
         </div>
         <div className="flex gap-2">
@@ -205,9 +205,9 @@ export default function GeneralLedgerPage() {
 
       {/* Accounts with lines */}
       {loading ? (
-        <div className="p-8 text-center text-gray-400">Chargement...</div>
+        <div className="p-12 text-center text-muted-foreground font-medium animate-pulse">Chargement...</div>
       ) : accounts.length === 0 ? (
-        <div className="p-8 text-center text-gray-400">
+        <div className="p-12 text-center text-muted-foreground bg-card/30 backdrop-blur-sm border border-dashed border-border/50 rounded-xl">
           Aucun mouvement trouv\u00e9 pour la p\u00e9riode s\u00e9lectionn\u00e9e
         </div>
       ) : (
@@ -219,12 +219,12 @@ export default function GeneralLedgerPage() {
             return (
               <div
                 key={acc.accountCode}
-                className="border rounded-lg overflow-hidden print:break-inside-avoid"
+                className="border border-border/50 rounded-xl overflow-hidden print:break-inside-avoid bg-card/60 backdrop-blur-md shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/20"
               >
                 {/* Account header */}
                 <button
                   type="button"
-                  className="w-full flex items-center gap-2 p-3 bg-blue-50 hover:bg-blue-100 text-left print:bg-white print:border-b"
+                  className="w-full flex items-center gap-3 p-4 bg-primary/5 hover:bg-primary/10 text-left transition-colors print:bg-white print:border-b"
                   onClick={() => toggleAccount(acc.accountCode)}
                 >
                   {isCollapsed ? (
@@ -232,17 +232,17 @@ export default function GeneralLedgerPage() {
                   ) : (
                     <ChevronDown className="h-4 w-4 text-gray-500 print:hidden" />
                   )}
-                  <span className="font-mono font-bold text-blue-700">
+                  <span className="font-mono font-bold text-primary tracking-wide">
                     {acc.accountCode}
                   </span>
-                  <span className="font-semibold text-gray-800">
+                  <span className="font-semibold text-foreground">
                     {acc.accountLabel}
                   </span>
-                  <span className="ml-auto text-sm text-gray-500">
+                  <span className="ml-auto text-sm text-muted-foreground">
                     {acc.lines.length} ligne(s) | Solde :{" "}
                     <span
                       className={
-                        soldeNum >= 0 ? "text-blue-700 font-mono" : "text-red-600 font-mono"
+                        soldeNum >= 0 ? "text-primary font-mono font-semibold" : "text-destructive font-mono font-semibold"
                       }
                     >
                       {soldeNum >= 0 ? "" : "-"}
@@ -254,33 +254,33 @@ export default function GeneralLedgerPage() {
                 {/* Lines table */}
                 {!isCollapsed && (
                   <table className="w-full">
-                    <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+                    <thead className="bg-muted/50 text-xs uppercase text-muted-foreground border-y border-border/50">
                       <tr>
-                        <th className="p-2 pl-3 text-left">Date</th>
-                        <th className="p-2 text-left">Journal</th>
-                        <th className="p-2 text-left">N\u00b0</th>
-                        <th className="p-2 text-left">Libell\u00e9</th>
-                        <th className="p-2 text-right">D\u00e9bit</th>
-                        <th className="p-2 text-right">Cr\u00e9dit</th>
-                        <th className="p-2 pr-3 text-right">Solde</th>
+                        <th className="p-3 pl-4 text-left font-semibold">Date</th>
+                        <th className="p-3 text-left font-semibold">Journal</th>
+                        <th className="p-3 text-left font-semibold">N\u00b0</th>
+                        <th className="p-3 text-left font-semibold">Libell\u00e9</th>
+                        <th className="p-3 text-right font-semibold">D\u00e9bit</th>
+                        <th className="p-3 text-right font-semibold">Cr\u00e9dit</th>
+                        <th className="p-3 pr-4 text-right font-semibold">Solde</th>
                       </tr>
                     </thead>
                     <tbody>
                       {acc.lines.map((line) => {
                         const balance = parseFloat(line.runningBalance);
                         return (
-                          <tr key={line.id} className="border-t hover:bg-gray-50">
-                            <td className="p-2 pl-3 text-sm">
+                          <tr key={line.id} className="border-t border-border/50 hover:bg-muted/30 transition-colors">
+                            <td className="p-3 pl-4 text-sm text-muted-foreground">
                               {formatDate(line.date)}
                             </td>
-                            <td className="p-2 text-sm font-mono text-blue-600">
+                            <td className="p-3 text-sm font-mono text-primary font-medium">
                               {line.journalCode}
                             </td>
-                            <td className="p-2 text-sm font-mono">
+                            <td className="p-3 text-sm font-mono text-muted-foreground">
                               {line.entryNumber}
                             </td>
-                            <td className="p-2 text-sm">{line.label}</td>
-                            <td className="p-2 text-right font-mono text-sm">
+                            <td className="p-3 text-sm font-medium">{line.label}</td>
+                            <td className="p-3 text-right font-mono text-sm">
                               {parseFloat(line.debit) > 0
                                 ? formatMAD(line.debit)
                                 : ""}
@@ -291,8 +291,8 @@ export default function GeneralLedgerPage() {
                                 : ""}
                             </td>
                             <td
-                              className={`p-2 pr-3 text-right font-mono text-sm ${
-                                balance < 0 ? "text-red-600" : ""
+                              className={`p-3 pr-4 text-right font-mono text-sm ${
+                                balance < 0 ? "text-destructive font-semibold" : "text-muted-foreground"
                               }`}
                             >
                               {balance < 0 ? "-" : ""}
@@ -302,19 +302,19 @@ export default function GeneralLedgerPage() {
                         );
                       })}
                       {/* Account total row */}
-                      <tr className="border-t-2 border-gray-300 bg-gray-50 font-bold">
-                        <td className="p-2 pl-3 text-sm" colSpan={4}>
+                      <tr className="border-t-2 border-border bg-muted/30 font-bold">
+                        <td className="p-4 pl-4 text-sm text-foreground" colSpan={4}>
                           Total {acc.accountCode} - {acc.accountLabel}
                         </td>
-                        <td className="p-2 text-right font-mono text-sm">
+                        <td className="p-4 text-right font-mono text-sm text-foreground">
                           {formatMAD(acc.totalDebit)}
                         </td>
-                        <td className="p-2 text-right font-mono text-sm">
+                        <td className="p-4 text-right font-mono text-sm text-foreground">
                           {formatMAD(acc.totalCredit)}
                         </td>
                         <td
-                          className={`p-2 pr-3 text-right font-mono text-sm ${
-                            soldeNum < 0 ? "text-red-600" : ""
+                          className={`p-4 pr-4 text-right font-mono text-sm ${
+                            soldeNum < 0 ? "text-destructive" : "text-primary"
                           }`}
                         >
                           {soldeNum < 0 ? "-" : ""}

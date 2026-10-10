@@ -60,11 +60,11 @@ export default function AccountsPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
+    <div className="flex h-[calc(100vh-4rem)] animate-in fade-in duration-500">
       {/* Left panel - Tree */}
-      <div className="w-[450px] border-r flex flex-col">
-        <div className="p-4 border-b flex items-center justify-between">
-          <h1 className="text-lg font-bold text-gray-900">Plan Comptable</h1>
+      <div className="w-112.5 border-r border-border/50 flex flex-col bg-card/60 backdrop-blur-xl">
+        <div className="p-5 border-b border-border/50 flex items-center justify-between bg-muted/20">
+          <h1 className="text-xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary">Plan Comptable</h1>
           <Button
             size="sm"
             onClick={() => {
@@ -76,7 +76,7 @@ export default function AccountsPage() {
           </Button>
         </div>
         {loading ? (
-          <div className="p-8 text-center text-gray-400">Chargement...</div>
+          <div className="p-12 text-center text-muted-foreground font-medium animate-pulse">Chargement...</div>
         ) : (
           <AccountTree
             accounts={accounts}
@@ -106,8 +106,14 @@ export default function AccountsPage() {
             onSaved={loadAccounts}
           />
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-400">
-            <p>Sélectionnez un compte ou créez-en un nouveau</p>
+          <div className="flex items-center justify-center h-full text-muted-foreground bg-muted/5">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted/50 mb-4">
+                <Plus className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="font-medium text-foreground">Aucun compte sélectionné</p>
+              <p className="text-sm mt-1">Sélectionnez un compte à gauche ou créez-en un nouveau</p>
+            </div>
           </div>
         )}
       </div>

@@ -237,9 +237,9 @@ export default function ReconciliationPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Lettrage</h1>
+    <div className="p-6 max-w-7xl mx-auto animate-in fade-in duration-500">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary">Lettrage</h1>
         {loadedAccountCode && (
           <Button variant="outline" size="sm" onClick={() => loadLines(loadedAccountCode, showLettered)} disabled={loading}>
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -249,21 +249,21 @@ export default function ReconciliationPage() {
       </div>
 
       {/* Account selector */}
-      <Card className="mb-6">
-        <CardContent className="pt-4">
+      <Card className="mb-8 bg-card/60 backdrop-blur-xl border-border/50 shadow-sm transition-all duration-300 hover:shadow-md">
+        <CardContent className="pt-6">
           <div className="flex items-end gap-4">
-            <div className="flex-1 max-w-xs">
-              <Label htmlFor="accountCode" className="mb-1 block">Code de compte</Label>
+            <div className="flex-1 max-w-75s">
+              <Label htmlFor="accountCode" className="mb-1.5 block text-muted-foreground">Code de compte</Label>
               <Input
                 id="accountCode"
                 value={accountCodeInput}
                 onChange={(e) => setAccountCodeInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCharger()}
                 placeholder="ex: 3421, 4411, 5141..."
-                className="font-mono"
+                className="font-mono bg-background/50"
               />
             </div>
-            <Button onClick={handleCharger} disabled={loading}>
+            <Button onClick={handleCharger} disabled={loading} className="shadow-sm">
               <Search className="h-4 w-4 mr-2" />
               {loading ? "Chargement..." : "Charger"}
             </Button>
@@ -285,9 +285,9 @@ export default function ReconciliationPage() {
 
       {/* Running balance bar */}
       {selectedLineIds.size > 0 && (
-        <Card className="mb-4 border-blue-200 bg-blue-50">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
+        <Card className="mb-8 border-primary/20 bg-primary/5 backdrop-blur-md shadow-sm">
+          <CardContent className="pt-5 pb-5">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex gap-8">
                 <div>
                   <span className="text-xs text-gray-500 block">Débit sélectionné</span>
@@ -298,8 +298,8 @@ export default function ReconciliationPage() {
                   <span className="font-mono font-semibold text-red-700">{formatMAD(selectedCredit)}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-gray-500 block">Différence</span>
-                  <span className={`font-mono font-semibold ${Math.abs(selectedDiff) < 0.005 ? "text-green-600" : "text-orange-600"}`}>
+                  <span className="text-xs text-muted-foreground block mb-1">Différence</span>
+                  <span className={`font-mono font-bold text-lg ${Math.abs(selectedDiff) < 0.005 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
                     {formatMAD(Math.abs(selectedDiff))}
                     {Math.abs(selectedDiff) < 0.005 && " ✓"}
                   </span>
@@ -321,11 +321,13 @@ export default function ReconciliationPage() {
       {loadedAccountCode ? (
         <>
           {/* Unlettered lines table */}
-          <div className="border rounded-lg overflow-hidden mb-6">
-            <div className="bg-gray-50 px-4 py-2 flex items-center justify-between border-b">
-              <h2 className="text-sm font-semibold text-gray-700">
+          <div className="bg-card/60 backdrop-blur-xl border border-border/50 rounded-xl overflow-hidden shadow-sm mb-8 transition-all duration-300 hover:shadow-md hover:border-primary/20">
+            <div className="bg-muted/30 px-5 py-3 flex items-center justify-between border-b border-border/50">
+              <h2 className="text-sm font-semibold text-foreground">
                 Lignes non lettrées
-                <span className="ml-2 text-gray-400 font-normal">({unletteredCount})</span>
+                <span className="ml-2 text-muted-foreground font-normal bg-muted px-2 py-0.5 rounded-full text-xs">
+                  {unletteredCount}
+                </span>
               </h2>
               {unletteredCount > 0 && (
                 <button
@@ -337,26 +339,26 @@ export default function ReconciliationPage() {
               )}
             </div>
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+              <thead className="bg-transparent text-xs uppercase text-muted-foreground border-b border-border/50">
                 <tr>
-                  <th className="p-3 w-10"></th>
-                  <th className="p-3 text-left">Date</th>
-                  <th className="p-3 text-left">Journal</th>
-                  <th className="p-3 text-left">Référence</th>
-                  <th className="p-3 text-left">Libellé</th>
-                  <th className="p-3 text-right">Débit</th>
-                  <th className="p-3 text-right">Crédit</th>
-                  <th className="p-3 text-left">Échéance</th>
+                  <th className="p-4 w-12 text-center"></th>
+                  <th className="p-4 text-left font-semibold">Date</th>
+                  <th className="p-4 text-left font-semibold">Journal</th>
+                  <th className="p-4 text-left font-semibold">Référence</th>
+                  <th className="p-4 text-left font-semibold">Libellé</th>
+                  <th className="p-4 text-right font-semibold">Débit</th>
+                  <th className="p-4 text-right font-semibold">Crédit</th>
+                  <th className="p-4 text-left font-semibold">Échéance</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="p-8 text-center text-gray-400">Chargement...</td>
+                    <td colSpan={8} className="p-12 text-center text-muted-foreground font-medium animate-pulse">Chargement...</td>
                   </tr>
                 ) : unletteredLines.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-8 text-center text-gray-400">
+                    <td colSpan={8} className="p-12 text-center text-muted-foreground border-dashed border-border/50">
                       Aucune ligne non lettrée pour ce compte
                     </td>
                   </tr>
@@ -364,51 +366,51 @@ export default function ReconciliationPage() {
                   unletteredLines.map((line) => (
                     <tr
                       key={line.id}
-                      className={`border-t cursor-pointer transition-colors ${
+                      className={`border-t border-border/30 cursor-pointer transition-colors ${
                         selectedLineIds.has(line.id)
-                          ? "bg-blue-50 hover:bg-blue-100"
-                          : "hover:bg-gray-50"
+                          ? "bg-primary/10 hover:bg-primary/15"
+                          : "hover:bg-muted/40"
                       }`}
                       onClick={() => handleToggleLine(line.id)}
                     >
-                      <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                      <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
                         <Checkbox
                           checked={selectedLineIds.has(line.id)}
                           onCheckedChange={() => handleToggleLine(line.id)}
                         />
                       </td>
-                      <td className="p-3 whitespace-nowrap">
+                      <td className="p-4 whitespace-nowrap text-muted-foreground">
                         {formatDate(line.journalEntry.entryDate)}
                       </td>
-                      <td className="p-3">
-                        <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">
+                      <td className="p-4">
+                        <span className="font-mono text-xs bg-muted text-muted-foreground font-semibold px-2 py-1 rounded-md border border-border/50">
                           {line.journalEntry.journal.code}
                         </span>
                       </td>
-                      <td className="p-3 text-gray-500 font-mono text-xs">
+                      <td className="p-4 text-muted-foreground font-mono text-xs">
                         {line.journalEntry.reference || `#${line.journalEntry.entryNumber}`}
                       </td>
-                      <td className="p-3 max-w-[200px] truncate" title={line.label}>
+                      <td className="p-4 max-w-50 truncate font-medium text-foreground" title={line.label}>
                         {line.label}
                         {line.tiersName && (
-                          <span className="ml-1 text-gray-400 text-xs">— {line.tiersName}</span>
+                          <span className="ml-2 text-muted-foreground text-xs font-normal">— {line.tiersName}</span>
                         )}
                       </td>
-                      <td className="p-3 text-right font-mono">
+                      <td className="p-4 text-right font-mono text-foreground">
                         {parseFloat(line.debit) > 0 ? (
-                          <span className="text-gray-900">{formatMAD(line.debit)}</span>
+                          <span className="font-semibold">{formatMAD(line.debit)}</span>
                         ) : (
-                          <span className="text-gray-300">—</span>
+                          <span className="text-muted-foreground/30">—</span>
                         )}
                       </td>
-                      <td className="p-3 text-right font-mono">
+                      <td className="p-4 text-right font-mono text-foreground">
                         {parseFloat(line.credit) > 0 ? (
-                          <span className="text-gray-900">{formatMAD(line.credit)}</span>
+                          <span className="font-semibold">{formatMAD(line.credit)}</span>
                         ) : (
-                          <span className="text-gray-300">—</span>
+                          <span className="text-muted-foreground/30">—</span>
                         )}
                       </td>
-                      <td className="p-3 text-gray-500 text-xs">
+                      <td className="p-4 text-muted-foreground text-xs">
                         {line.dueDate ? formatDate(line.dueDate) : "—"}
                       </td>
                     </tr>
@@ -421,11 +423,13 @@ export default function ReconciliationPage() {
           {/* Lettered groups */}
           {showLettered && letteredByCode.size > 0 && (
             <div>
-              <h2 className="text-sm font-semibold text-gray-700 mb-3">
+              <h2 className="text-sm font-semibold text-foreground mb-4">
                 Groupes lettrés
-                <span className="ml-2 text-gray-400 font-normal">({letteredByCode.size})</span>
+                <span className="ml-2 text-muted-foreground font-normal bg-muted px-2 py-0.5 rounded-full text-xs">
+                  {letteredByCode.size}
+                </span>
               </h2>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {Array.from(letteredByCode.entries())
                   .sort(([a], [b]) => {
                     if (a.length !== b.length) return a.length - b.length;
@@ -435,8 +439,8 @@ export default function ReconciliationPage() {
                     const groupInfo = lettrageGroups.find((g) => g.code === code);
                     const badgeColor = getLettrageBadgeColor(code);
                     return (
-                      <div key={code} className="border rounded-lg overflow-hidden">
-                        <div className="bg-gray-50 px-4 py-2 flex items-center justify-between border-b">
+                      <div key={code} className="bg-card/60 backdrop-blur-xl border border-border/50 rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/20">
+                        <div className="bg-muted/30 px-5 py-3 flex items-center justify-between border-b border-border/50">
                           <div className="flex items-center gap-3">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${badgeColor}`}>
                               {code}
@@ -477,7 +481,7 @@ export default function ReconciliationPage() {
                                 <td className="p-3 text-gray-500 font-mono text-xs w-28">
                                   {line.journalEntry.reference || `#${line.journalEntry.entryNumber}`}
                                 </td>
-                                <td className="p-3 max-w-[200px] truncate text-gray-700" title={line.label}>
+                                <td className="p-3 max-w-50 truncate text-gray-700" title={line.label}>
                                   {line.label}
                                 </td>
                                 <td className="p-3 text-right font-mono w-28">
@@ -501,10 +505,12 @@ export default function ReconciliationPage() {
           )}
         </>
       ) : (
-        <div className="text-center py-16 text-gray-400">
-          <Link2 className="h-12 w-12 mx-auto mb-3 opacity-30" />
-          <p className="text-lg">Saisissez un code de compte pour commencer le lettrage</p>
-          <p className="text-sm mt-1">Exemples: 3421 (clients), 4411 (fournisseurs), 5141 (banque)</p>
+        <div className="text-center py-20 text-muted-foreground border border-dashed border-border/50 rounded-xl bg-card/30 backdrop-blur-sm max-w-2xl mx-auto mt-12">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted/50 mb-6">
+            <Link2 className="h-10 w-10 text-muted-foreground" />
+          </div>
+          <p className="text-xl font-medium text-foreground mb-2">Saisissez un code de compte pour commencer le lettrage</p>
+          <p className="text-sm">Exemples: 3421 (clients), 4411 (fournisseurs), 5141 (banque)</p>
         </div>
       )}
     </div>

@@ -462,12 +462,14 @@ export default function ClosingPage() {
 
   if (!companyId) {
     return (
-      <div className="p-6">
-        <div className="rounded-lg border border-dashed p-10 text-center">
-          <ShieldCheck className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-          <h1 className="text-xl font-semibold">Cloture & Reporting</h1>
+      <div className="p-6 max-w-7xl mx-auto animate-in fade-in duration-500">
+        <div className="rounded-xl border border-dashed border-border/50 bg-card/30 backdrop-blur-sm p-12 text-center max-w-2xl mx-auto mt-12">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted/50 mb-6">
+            <ShieldCheck className="h-10 w-10 text-muted-foreground" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">Clôture & Reporting</h1>
           <p className="mt-2 text-muted-foreground">
-            Selectionnez une societe pour preparer la cloture.
+            Sélectionnez une société pour préparer la clôture.
           </p>
         </div>
       </div>
@@ -476,12 +478,14 @@ export default function ClosingPage() {
 
   if (!currentFiscalYearId) {
     return (
-      <div className="p-6">
-        <div className="rounded-lg border border-dashed p-10 text-center">
-          <ShieldCheck className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-          <h1 className="text-xl font-semibold">Cloture & Reporting</h1>
+      <div className="p-6 max-w-7xl mx-auto animate-in fade-in duration-500">
+        <div className="rounded-xl border border-dashed border-border/50 bg-card/30 backdrop-blur-sm p-12 text-center max-w-2xl mx-auto mt-12">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted/50 mb-6">
+            <ShieldCheck className="h-10 w-10 text-muted-foreground" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">Clôture & Reporting</h1>
           <p className="mt-2 text-muted-foreground">
-            Selectionnez un exercice pour preparer la cloture.
+            Sélectionnez un exercice pour préparer la clôture.
           </p>
         </div>
       </div>
@@ -533,14 +537,14 @@ export default function ClosingPage() {
   const currentStatusCfg = statusConfig[fyStatus as keyof typeof statusConfig] ?? statusConfig.OPEN;
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-8 p-6 max-w-7xl mx-auto animate-in fade-in duration-500">
       {/* En-tête */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Clôture &amp; Reporting — {fyLabel}
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary mb-1">
+            Clôture &amp; Reporting — <span className="text-primary/80">{fyLabel}</span>
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground font-medium">
             L&apos;agent analyse et assiste. Les décisions de clôture restent humaines.
           </p>
         </div>
@@ -564,7 +568,7 @@ export default function ClosingPage() {
       </div>
 
       {/* Bandeau statut exercice — workflow humain */}
-      <div className={`rounded-lg border p-4 ${currentStatusCfg.bannerCls}`}>
+      <div className={`rounded-xl border p-6 bg-card/60 backdrop-blur-md shadow-sm transition-all duration-300 hover:shadow-md ${currentStatusCfg.bannerCls}`}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-3">
             {currentStatusCfg.icon}
@@ -662,75 +666,71 @@ export default function ClosingPage() {
         </Card>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
+      <div className="grid gap-6 md:grid-cols-4">
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Analyses</CardTitle>
-            <FileSearch className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 bg-primary/10 rounded-full">
+              <FileSearch className="h-4 w-4 text-primary" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{agentRuns.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Executions de l&apos;agent
-            </p>
+            <div className="text-3xl font-bold font-mono">{agentRuns.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">Exécutions de l&apos;agent</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Blocages</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-500" />
+            <div className="p-2 bg-red-500/10 rounded-full">
+              <AlertTriangle className="h-4 w-4 text-red-500" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold font-mono text-red-600 dark:text-red-400">
               {analysisResult ? blockingChecks : "-"}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Checks a traiter avant cloture
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Checks à traiter avant clôture</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Rapprochements
-            </CardTitle>
-            <ArrowLeftRight className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Rapprochements</CardTitle>
+            <div className="p-2 bg-orange-500/10 rounded-full">
+              <ArrowLeftRight className="h-4 w-4 text-orange-500" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold font-mono text-orange-600 dark:text-orange-400">
               {analysisResult
                 ? reconciliationPrompts.length
                 : pendingSuggestions.length || "-"}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Prompts de suivi ouverts
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Prompts de suivi ouverts</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Brouillons de rapports
-            </CardTitle>
-            <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Brouillons de rapports</CardTitle>
+            <div className="p-2 bg-blue-500/10 rounded-full">
+              <FileSpreadsheet className="h-4 w-4 text-blue-500" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold font-mono text-blue-600 dark:text-blue-400">
               {analysisResult ? draftReports.length : "-"}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Sorties pregenerees pour revue
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Sorties prégénérées pour revue</p>
           </CardContent>
         </Card>
       </div>
 
       {analysisResult ? (
         <>
-          <Card>
+          <Card className="bg-card/60 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden">
             <CardHeader>
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div className="space-y-1">
@@ -857,7 +857,7 @@ export default function ClosingPage() {
           </Card>
 
           {analysisResult.snapshot.priorPeriod && (
-            <Card>
+            <Card className="bg-card/60 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <History className="h-5 w-5 text-muted-foreground" />
@@ -866,12 +866,12 @@ export default function ClosingPage() {
               </CardHeader>
               <CardContent>
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="bg-muted/50">
                     <TableRow>
-                      <TableHead>Indicateur</TableHead>
-                      <TableHead className="text-right">{analysisResult.snapshot.fiscalYear.label}</TableHead>
-                      <TableHead className="text-right">{analysisResult.snapshot.priorPeriod.label}</TableHead>
-                      <TableHead className="text-right">Variation</TableHead>
+                      <TableHead className="font-semibold">Indicateur</TableHead>
+                      <TableHead className="text-right font-semibold">{analysisResult.snapshot.fiscalYear.label}</TableHead>
+                      <TableHead className="text-right font-semibold">{analysisResult.snapshot.priorPeriod.label}</TableHead>
+                      <TableHead className="text-right font-semibold">Variation</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -906,12 +906,12 @@ export default function ClosingPage() {
                       const variationPct = row.prior !== 0 ? (variation / Math.abs(row.prior)) * 100 : null;
                       const isPositive = variation >= 0;
                       return (
-                        <TableRow key={row.label}>
+                        <TableRow key={row.label} className="border-border/50 hover:bg-muted/40 transition-colors">
                           <TableCell className="font-medium">{row.label}</TableCell>
-                          <TableCell className="text-right">{formatMADWithCurrency(row.current)}</TableCell>
-                          <TableCell className="text-right text-muted-foreground">{formatMADWithCurrency(row.prior)}</TableCell>
-                          <TableCell className="text-right">
-                            <span className={variation === 0 ? "text-muted-foreground" : isPositive ? "text-green-600" : "text-red-600"}>
+                          <TableCell className="text-right font-mono">{formatMADWithCurrency(row.current)}</TableCell>
+                          <TableCell className="text-right text-muted-foreground font-mono">{formatMADWithCurrency(row.prior)}</TableCell>
+                          <TableCell className="text-right font-mono">
+                            <span className={variation === 0 ? "text-muted-foreground" : isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}>
                               {variation >= 0 ? "+" : ""}{formatMADWithCurrency(variation)}
                               {variationPct !== null ? (
                                 <span className="ml-1 text-xs">({variationPct >= 0 ? "+" : ""}{variationPct.toFixed(1)}%)</span>
@@ -969,7 +969,7 @@ export default function ClosingPage() {
                           {severityBadge(check.severity)}
                         </TableCell>
                         <TableCell>{check.area}</TableCell>
-                        <TableCell className="max-w-[360px] whitespace-normal">
+                        <TableCell className="max-w-90 whitespace-normal">
                           <p className="font-medium">{check.title}</p>
                           <p className="text-sm text-muted-foreground">
                             {check.description}
@@ -992,7 +992,7 @@ export default function ClosingPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-card/60 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Prompts de rapprochement</CardTitle>
@@ -1027,7 +1027,7 @@ export default function ClosingPage() {
                       <TableRow key={`${prompt.title}-${index}`}>
                         <TableCell>{severityBadge(prompt.priority)}</TableCell>
                         <TableCell>{prompt.area}</TableCell>
-                        <TableCell className="max-w-[340px] whitespace-normal">
+                        <TableCell className="max-w-85 whitespace-normal">
                           <p className="font-medium">{prompt.title}</p>
                           <p className="text-sm text-muted-foreground">
                             {prompt.description}
@@ -1049,7 +1049,7 @@ export default function ClosingPage() {
                             ? ` · ${prompt.openItemCount} item(s)`
                             : ""}
                         </TableCell>
-                        <TableCell className="max-w-[300px] whitespace-normal text-sm text-muted-foreground">
+                        <TableCell className="max-w-75 whitespace-normal text-sm text-muted-foreground">
                           {prompt.recommendedAction}
                         </TableCell>
                       </TableRow>
@@ -1060,7 +1060,7 @@ export default function ClosingPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-card/60 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Brouillons de reporting</CardTitle>
@@ -1155,7 +1155,7 @@ export default function ClosingPage() {
       )}
 
       {/* Duplication N-1 */}
-      <Card>
+      <Card className="bg-card/60 backdrop-blur-xl border border-border/50 shadow-sm">
         <CardHeader>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -1208,7 +1208,7 @@ export default function ClosingPage() {
         )}
       </Card>
 
-      <Card>
+      <Card className="bg-card/60 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Historique des analyses</CardTitle>
@@ -1234,13 +1234,13 @@ export default function ClosingPage() {
             </div>
           ) : (
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-muted/50">
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Modele</TableHead>
-                  <TableHead>Duree</TableHead>
-                  <TableHead className="text-center">Résultat</TableHead>
+                  <TableHead className="font-semibold">Date</TableHead>
+                  <TableHead className="font-semibold">Statut</TableHead>
+                  <TableHead className="font-semibold">Modèle</TableHead>
+                  <TableHead className="font-semibold">Durée</TableHead>
+                  <TableHead className="text-center font-semibold">Résultat</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

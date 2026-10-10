@@ -153,15 +153,19 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Tableau de Bord</h1>
+    <div className="p-6 space-y-8 min-h-screen bg-linear-to-br from-background via-background/95 to-muted/30 animate-in fade-in duration-700">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary">
+          Tableau de Bord
+        </h1>
+      </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {kpiCards.map((kpi) => (
-          <Card key={kpi.title}>
+          <Card key={kpi.title} className="bg-card/60 backdrop-blur-md border-border/50 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 group">
             <CardContent className="flex items-center gap-4 pt-0">
-              <div className={`rounded-lg p-3 ${kpi.bg}`}>
+              <div className={`rounded-xl p-3 ${kpi.bg} shadow-inner transition-transform duration-300 group-hover:scale-110`}>
                 <kpi.icon className={`h-6 w-6 ${kpi.color}`} />
               </div>
               <div className="flex-1 min-w-0">
@@ -180,7 +184,7 @@ export default function DashboardPage() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Monthly Revenue vs Expenses Bar Chart */}
-        <Card>
+        <Card className="bg-card/60 backdrop-blur-md border-border/50 shadow-sm hover:shadow-md transition-all duration-300">
           <CardHeader>
             <CardTitle className="text-base">
               Chiffre d{"'"}Affaires vs Charges par Mois
@@ -222,7 +226,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Expense Breakdown Donut Chart */}
-        <Card>
+        <Card className="bg-card/60 backdrop-blur-md border-border/50 shadow-sm hover:shadow-md transition-all duration-300">
           <CardHeader>
             <CardTitle className="text-base">
               Répartition des Charges

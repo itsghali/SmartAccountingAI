@@ -156,14 +156,14 @@ export default function CompanySettingsPage() {
   }
 
   return (
-    <div className="p-6 max-w-3xl">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">
+    <div className="p-6 max-w-75xl animate-in fade-in duration-500">
+      <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary mb-8">
         Paramètres de la Société
       </h1>
 
       <form onSubmit={handleSubmit(onSubmit)}>
         {/* General Info */}
-        <Card className="mb-6">
+        <Card className="mb-8 bg-card/60 backdrop-blur-xl border-border/50 shadow-sm transition-all duration-300 hover:shadow-md">
           <CardHeader>
             <CardTitle className="text-base">Informations Générales</CardTitle>
           </CardHeader>
@@ -231,7 +231,7 @@ export default function CompanySettingsPage() {
         </Card>
 
         {/* Fiscal Identifiers */}
-        <Card className="mb-6">
+        <Card className="mb-8 bg-card/60 backdrop-blur-xl border-border/50 shadow-sm transition-all duration-300 hover:shadow-md">
           <CardHeader>
             <CardTitle className="text-base">
               Identifiants Fiscaux

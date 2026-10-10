@@ -155,11 +155,11 @@ export default function DocumentsPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="p-6 space-y-6 animate-in fade-in duration-500">
+      <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Documents</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary">Documents</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Upload, process, and validate documents that still need action.
           </p>
         </div>
@@ -197,11 +197,13 @@ export default function DocumentsPage() {
       </div>
 
       {!currentCompanyId && (
-        <div className="rounded-lg border border-dashed p-8 text-center">
+        <div className="rounded-xl border border-dashed border-border/50 bg-card/30 backdrop-blur-sm p-12 text-center transition-all duration-300">
           <div className="mb-4 flex justify-center">
-            <Building2 className="size-12 text-muted-foreground" />
+            <div className="rounded-full bg-muted/50 p-4">
+              <Building2 className="size-10 text-muted-foreground" />
+            </div>
           </div>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground font-medium">
             Select a company from the header to view documents
           </p>
         </div>
@@ -214,17 +216,21 @@ export default function DocumentsPage() {
       )}
 
       {isError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-8 text-center text-red-600">
-          <AlertCircle className="mx-auto mb-4 size-12" />
-          <p className="font-medium mb-2">Error loading documents</p>
-          <p className="text-sm font-mono whitespace-pre-wrap">{error?.message || "Unknown error"}</p>
+        <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-8 text-center text-destructive backdrop-blur-sm">
+          <AlertCircle className="mx-auto mb-4 size-12 opacity-80" />
+          <p className="font-semibold mb-2">Error loading documents</p>
+          <p className="text-sm font-mono whitespace-pre-wrap opacity-70">{error?.message || "Unknown error"}</p>
         </div>
       )}
 
       {documents && documents.length === 0 && (
-        <div className="rounded-lg border border-dashed p-8 text-center">
-          <FileText className="mx-auto mb-4 size-12 text-muted-foreground" />
-          <p className="text-muted-foreground">No documents yet</p>
+        <div className="rounded-xl border border-dashed border-border/50 bg-card/30 backdrop-blur-sm p-12 text-center transition-all duration-300">
+          <div className="mx-auto mb-4 flex justify-center">
+            <div className="rounded-full bg-muted/50 p-4">
+              <FileText className="size-10 text-muted-foreground" />
+            </div>
+          </div>
+          <p className="font-semibold text-foreground mb-1">No documents yet</p>
           <p className="text-sm text-muted-foreground">
             Upload your first invoice or receipt to get started
           </p>
@@ -232,15 +238,21 @@ export default function DocumentsPage() {
       )}
 
       {hasOnlyApprovedDocuments && (
-        <div className="rounded-lg border border-dashed p-8 text-center">
-          <CheckCircle className="mx-auto mb-4 size-12 text-green-600" />
-          <p className="text-muted-foreground">No documents are waiting for action here</p>
+        <div className="rounded-xl border border-dashed border-border/50 bg-emerald-500/5 backdrop-blur-sm p-12 text-center transition-all duration-300">
+          <div className="mx-auto mb-4 flex justify-center">
+            <div className="rounded-full bg-emerald-500/10 p-4">
+              <CheckCircle className="size-10 text-emerald-600 dark:text-emerald-400" />
+            </div>
+          </div>
+          <p className="font-semibold text-foreground mb-1">No documents are waiting for action here</p>
           <p className="text-sm text-muted-foreground">
             Approved documents now live in Approved Documents.
           </p>
-          <div className="mt-4">
+          <div className="mt-6">
             <Link href="/approved-documents">
-              <Button variant="outline">Open Approved Documents</Button>
+              <Button variant="outline" className="border-emerald-500/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
+                Open Approved Documents
+              </Button>
             </Link>
           </div>
         </div>
@@ -253,13 +265,13 @@ export default function DocumentsPage() {
             return (
               <div
                 key={doc.id}
-                className="flex items-center gap-4 rounded-lg border p-4 hover:bg-muted/50"
+                className="flex items-center gap-4 rounded-xl border border-border/50 bg-card/60 backdrop-blur-md p-4 shadow-sm hover:shadow-md hover:border-primary/20 hover:bg-muted/30 transition-all duration-300 group hover:-translate-y-0.5"
               >
-                <div className="flex-shrink-0">
+                <div className="shrink-0 rounded-lg bg-muted/50 p-2.5 group-hover:bg-primary/10 transition-colors">
                   {doc.mimeType.startsWith("image/") ? (
-                    <FileImage className="size-10 text-muted-foreground" />
+                    <FileImage className="size-6 text-muted-foreground group-hover:text-primary transition-colors" />
                   ) : (
-                    <FileText className="size-10 text-muted-foreground" />
+                    <FileText className="size-6 text-muted-foreground group-hover:text-primary transition-colors" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">

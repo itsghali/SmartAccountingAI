@@ -159,10 +159,10 @@ export default function JournalReportPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-400 mx-auto animate-in fade-in duration-500">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">État du Journal</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary">État du Journal</h1>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleExportCSV}>
             <Download className="h-4 w-4 mr-2" /> Exporter CSV
@@ -174,13 +174,13 @@ export default function JournalReportPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-4 mb-6 items-end">
+      <div className="flex flex-wrap gap-6 mb-8 p-6 bg-card/60 backdrop-blur-md border border-border/50 shadow-sm rounded-xl items-end transition-all duration-300 hover:shadow-md">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1.5">
             Journal
           </label>
           <Select value={selectedJournal} onValueChange={(v) => v !== null && setSelectedJournal(v)}>
-            <SelectTrigger className="w-[240px]">
+            <SelectTrigger className="w-60">
               <SelectValue placeholder="Tous les journaux">
                 {selectedJournal === "all"
                   ? "Tous les journaux"
@@ -201,25 +201,25 @@ export default function JournalReportPage() {
           </Select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1.5">
             Date début
           </label>
           <Input
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="w-[160px]"
+            className="w-40"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1.5">
             Date fin
           </label>
           <Input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="w-[160px]"
+            className="w-40"
           />
         </div>
       </div>
@@ -231,9 +231,9 @@ export default function JournalReportPage() {
 
       {/* Content */}
       {loading ? (
-        <div className="p-8 text-center text-gray-400">Chargement...</div>
+        <div className="p-12 text-center text-muted-foreground font-medium animate-pulse">Chargement...</div>
       ) : journalGroups.length === 0 ? (
-        <div className="p-8 text-center text-gray-400">
+        <div className="p-12 text-center text-muted-foreground bg-card/30 backdrop-blur-sm border border-dashed border-border/50 rounded-xl">
           Aucune écriture trouvée pour la période sélectionnée
         </div>
       ) : (
@@ -241,36 +241,37 @@ export default function JournalReportPage() {
           {journalGroups.map((group) => (
             <div key={group.journalCode} className="print:break-inside-avoid">
               {/* Journal header */}
-              <div className="bg-blue-50 p-3 rounded-t-lg border border-b-0 print:bg-white print:border-b">
-                <h2 className="text-lg font-semibold text-gray-800">
-                  <span className="font-mono text-blue-700">
+              <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 mb-4 print:bg-white print:border-b shadow-sm">
+                <h2 className="text-xl font-semibold text-foreground flex items-center">
+                  <span className="font-mono text-primary font-bold mr-2">
                     {group.journalCode}
-                  </span>{" "}
-                  — {group.journalLabel}
-                  <span className="text-sm font-normal text-gray-500 ml-3">
-                    ({group.entries.length} écriture(s))
+                  </span>
+                  <span className="text-muted-foreground mr-3">—</span>
+                  {group.journalLabel}
+                  <span className="text-sm font-medium text-muted-foreground ml-4 bg-muted px-2.5 py-0.5 rounded-full">
+                    {group.entries.length} écriture(s)
                   </span>
                 </h2>
               </div>
 
               {/* Entries — one card per entry */}
-              <div className="space-y-3 mt-3">
+              <div className="space-y-4">
                 {group.entries.map((entry) => (
                   <div
                     key={entry.id}
-                    className="border rounded-lg overflow-hidden shadow-sm"
+                    className="border border-border/50 rounded-xl overflow-hidden shadow-sm bg-card/60 backdrop-blur-xl transition-all duration-300 hover:shadow-md hover:border-primary/20"
                   >
                     {/* Entry header */}
-                    <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 bg-gray-50 border-b text-sm print:bg-white">
-                      <span className="font-mono font-semibold text-gray-800">
+                    <div className="flex flex-wrap items-center gap-4 px-5 py-3 bg-muted/30 border-b border-border/50 text-sm print:bg-white">
+                      <span className="font-mono font-bold text-foreground">
                         N° {entry.entryNumber}
                       </span>
-                      <span className="text-gray-500">{formatDate(entry.entryDate)}</span>
-                      <span className="font-medium text-gray-800 flex-1">
+                      <span className="text-muted-foreground font-medium">{formatDate(entry.entryDate)}</span>
+                      <span className="font-medium text-foreground flex-1">
                         {entry.description}
                       </span>
                       {(entry.reference || entry.piece) && (
-                        <span className="text-gray-500 text-xs">
+                        <span className="text-muted-foreground/80 text-xs px-2 py-1 bg-muted rounded-md border border-border/50">
                           {entry.piece ? `Pièce: ${entry.piece}` : `Réf: ${entry.reference}`}
                         </span>
                       )}
@@ -283,34 +284,34 @@ export default function JournalReportPage() {
 
                     {/* Entry lines */}
                     <table className="w-full">
-                      <thead className="text-xs uppercase text-gray-400 bg-white">
+                      <thead className="text-xs uppercase text-muted-foreground bg-transparent border-b border-border/50">
                         <tr>
-                          <th className="p-2 pl-4 text-left">Compte</th>
-                          <th className="p-2 text-left">Libellé du compte</th>
-                          <th className="p-2 text-left">Libellé</th>
-                          <th className="p-2 text-right">Débit</th>
-                          <th className="p-2 pr-4 text-right">Crédit</th>
+                          <th className="p-3 pl-5 text-left font-semibold">Compte</th>
+                          <th className="p-3 text-left font-semibold">Libellé du compte</th>
+                          <th className="p-3 text-left font-semibold">Libellé</th>
+                          <th className="p-3 text-right font-semibold">Débit</th>
+                          <th className="p-3 pr-5 text-right font-semibold">Crédit</th>
                         </tr>
                       </thead>
                       <tbody>
                         {entry.lines.map((line) => (
                           <tr
                             key={line.id}
-                            className="border-t border-gray-100 hover:bg-gray-50"
+                            className="border-t border-border/30 hover:bg-muted/40 transition-colors"
                           >
-                            <td className="p-2 pl-4 font-mono text-sm font-medium text-blue-700">
+                            <td className="p-3 pl-5 font-mono text-sm font-bold text-primary tracking-wide">
                               {line.accountCode}
                             </td>
-                            <td className="p-2 text-sm text-gray-600">
+                            <td className="p-3 text-sm font-medium text-muted-foreground">
                               {line.account.label}
                             </td>
-                            <td className="p-2 text-sm">{line.label}</td>
-                            <td className="p-2 text-right font-mono text-sm">
+                            <td className="p-3 text-sm">{line.label}</td>
+                            <td className="p-3 text-right font-mono text-sm text-foreground">
                               {parseFloat(line.debit) > 0
                                 ? formatMAD(line.debit)
                                 : ""}
                             </td>
-                            <td className="p-2 pr-4 text-right font-mono text-sm">
+                            <td className="p-3 pr-5 text-right font-mono text-sm text-foreground">
                               {parseFloat(line.credit) > 0
                                 ? formatMAD(line.credit)
                                 : ""}
@@ -318,14 +319,14 @@ export default function JournalReportPage() {
                           </tr>
                         ))}
                         {/* Entry total */}
-                        <tr className="border-t-2 border-gray-200 bg-gray-50 font-semibold text-sm">
-                          <td className="p-2 pl-4 text-gray-600" colSpan={3}>
+                        <tr className="border-t-2 border-border/50 bg-muted/20 font-bold text-sm">
+                          <td className="p-4 pl-5 text-foreground" colSpan={3}>
                             Total N° {entry.entryNumber}
                           </td>
-                          <td className="p-2 text-right font-mono text-gray-800">
+                          <td className="p-4 text-right font-mono text-foreground">
                             {formatMAD(entry.totalDebit)}
                           </td>
-                          <td className="p-2 pr-4 text-right font-mono text-gray-800">
+                          <td className="p-4 pr-5 text-right font-mono text-foreground">
                             {formatMAD(entry.totalCredit)}
                           </td>
                         </tr>

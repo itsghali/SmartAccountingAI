@@ -398,19 +398,23 @@ export default function TaxPackagePage() {
     taxPackage?.status === "REVIEWED" || taxPackage?.status === "SUBMITTED";
 
   return (
-    <div className="p-6 max-w-[1200px] mx-auto">
+    <div className="p-6 max-w-6xl mx-auto animate-in fade-in duration-500">
       {/* ── Header ── */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <FileText className="h-6 w-6 text-blue-600" />
-          <h1 className="text-2xl font-bold text-gray-900">Liasse Fiscale</h1>
-          {taxPackage && (
-            <Badge variant={statusConfig[taxPackage.status]?.variant ?? "secondary"}>
-              {statusConfig[taxPackage.status]?.label ?? taxPackage.status}
-            </Badge>
-          )}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary mb-1">Liasse Fiscale</h1>
+            {taxPackage && (
+              <Badge variant={statusConfig[taxPackage.status]?.variant ?? "secondary"} className="shadow-sm">
+                {statusConfig[taxPackage.status]?.label ?? taxPackage.status}
+              </Badge>
+            )}
+          </div>
+          <p className="text-muted-foreground font-medium mt-1">
+            Génération et consultation de la liasse fiscale.
+          </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {taxPackage?.status === "GENERATED" && (
             <Button
               variant="outline"
@@ -437,27 +441,30 @@ export default function TaxPackagePage() {
 
       {/* ── Generated date info ── */}
       {taxPackage?.generatedAt && (
-        <p className="text-sm text-gray-400 mb-4">
+        <p className="text-sm text-muted-foreground/80 mb-6 font-medium">
           Dernière génération :{" "}
-          {new Date(taxPackage.generatedAt).toLocaleString("fr-MA")}
+          <span className="text-foreground/80">{new Date(taxPackage.generatedAt).toLocaleString("fr-MA")}</span>
         </p>
       )}
 
       {/* ── Main content ── */}
       {loading ? (
-        <Card>
-          <CardContent className="flex items-center justify-center h-48 text-gray-400">
-            Chargement...
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm">
+          <CardContent className="flex flex-col items-center justify-center h-48 text-muted-foreground gap-4">
+            <RefreshCcw className="h-8 w-8 animate-spin text-primary/50" />
+            <p>Chargement de la liasse...</p>
           </CardContent>
         </Card>
       ) : !taxPackage ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center h-64 text-gray-400 gap-4">
-            <FileText className="h-12 w-12 text-gray-300" />
+        <Card className="bg-card/60 backdrop-blur-md border border-dashed border-border/50 shadow-sm">
+          <CardContent className="flex flex-col items-center justify-center h-64 text-muted-foreground gap-4">
+            <div className="p-4 bg-muted/50 rounded-full">
+              <FileText className="h-12 w-12 text-primary/50" />
+            </div>
             <p className="text-center">
               Aucune liasse fiscale pour cet exercice.
               <br />
-              Cliquez sur &quot;Générer la liasse&quot; pour démarrer.
+              Cliquez sur <span className="font-semibold text-foreground">Générer la liasse</span> pour démarrer.
             </p>
           </CardContent>
         </Card>
@@ -475,16 +482,15 @@ export default function TaxPackagePage() {
           </TabsList>
 
           {taxPackage.tables.map((table) => (
-            <TabsContent key={table.tableCode} value={table.tableCode}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-semibold text-gray-700">
+            <TabsContent key={table.tableCode} value={table.tableCode} className="animate-in fade-in duration-300">
+              <Card className="bg-card/60 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden">
+                <CardHeader className="pb-4 bg-muted/20 border-b border-border/50">
+                  <CardTitle className="text-lg font-semibold text-foreground">
                     {table.tableName}
                   </CardTitle>
                   {!isReadOnly && table.cells.some((c) => c.isManual) && (
-                    <p className="text-xs text-gray-400">
-                      Les cellules en surbrillance sont éditables — survolez
-                      pour modifier.
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Les cellules en surbrillance sont éditables — survolez pour modifier.
                     </p>
                   )}
                 </CardHeader>

@@ -158,9 +158,9 @@ export default function FixedAssetsPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Immobilisations</h1>
+    <div className="p-6 max-w-7xl mx-auto animate-in fade-in duration-500">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary">Immobilisations</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleGenerateAmortization} disabled={generating}>
             <Calculator className="h-4 w-4 mr-2" />
@@ -252,31 +252,31 @@ export default function FixedAssetsPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardContent className="pt-4">
-            <p className="text-sm text-gray-500">Valeur brute totale</p>
-            <p className="text-2xl font-bold font-mono">{formatMAD(totalAcquisition)}</p>
+      <div className="grid grid-cols-3 gap-6 mb-8">
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
+          <CardContent className="pt-6">
+            <p className="text-sm font-medium text-muted-foreground mb-1">Valeur brute totale</p>
+            <p className="text-3xl font-bold font-mono text-foreground">{formatMAD(totalAcquisition)}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <p className="text-sm text-gray-500">Amortissements cumulés</p>
-            <p className="text-2xl font-bold font-mono text-orange-600">{formatMAD(totalAmort)}</p>
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
+          <CardContent className="pt-6">
+            <p className="text-sm font-medium text-muted-foreground mb-1">Amortissements cumulés</p>
+            <p className="text-3xl font-bold font-mono text-amber-600 dark:text-amber-400">{formatMAD(totalAmort)}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <p className="text-sm text-gray-500">Valeur nette comptable</p>
-            <p className="text-2xl font-bold font-mono text-blue-600">{formatMAD(totalNBV)}</p>
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
+          <CardContent className="pt-6">
+            <p className="text-sm font-medium text-muted-foreground mb-1">Valeur nette comptable</p>
+            <p className="text-3xl font-bold font-mono text-emerald-600 dark:text-emerald-400">{formatMAD(totalNBV)}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 mb-4">
+      <div className="flex gap-4 mb-6 p-4 bg-card/60 backdrop-blur-md border border-border/50 shadow-sm rounded-xl">
         <Select value={filterCategory} onValueChange={(v) => v !== null && setFilterCategory(v)}>
-          <SelectTrigger className="w-[200px]"><SelectValue placeholder="Toutes catégories" /></SelectTrigger>
+          <SelectTrigger className="w-60 bg-background/50"><SelectValue placeholder="Toutes catégories" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Toutes catégories</SelectItem>
             {Object.entries(categoryLabels).map(([k, v]) => (
@@ -285,7 +285,7 @@ export default function FixedAssetsPage() {
           </SelectContent>
         </Select>
         <Select value={filterStatus} onValueChange={(v) => v !== null && setFilterStatus(v)}>
-          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Tous statuts" /></SelectTrigger>
+          <SelectTrigger className="w-45 bg-background/50"><SelectValue placeholder="Tous statuts" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous statuts</SelectItem>
             <SelectItem value="ACTIVE">Actif</SelectItem>
@@ -296,44 +296,44 @@ export default function FixedAssetsPage() {
       </div>
 
       {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
+      <div className="bg-card/60 backdrop-blur-xl border border-border/50 rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/20">
         <table className="w-full">
-          <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+          <thead className="bg-muted/50 text-xs uppercase text-muted-foreground border-b border-border/50">
             <tr>
-              <th className="p-3 text-left">Code</th>
-              <th className="p-3 text-left">Libellé</th>
-              <th className="p-3 text-left">Catégorie</th>
-              <th className="p-3 text-left">Date acq.</th>
-              <th className="p-3 text-right">Valeur brute</th>
-              <th className="p-3 text-right">Amort. cumulés</th>
-              <th className="p-3 text-right">VNC</th>
-              <th className="p-3 text-center">Statut</th>
-              <th className="p-3 text-center">Actions</th>
+              <th className="p-4 text-left font-semibold">Code</th>
+              <th className="p-4 text-left font-semibold">Libellé</th>
+              <th className="p-4 text-left font-semibold">Catégorie</th>
+              <th className="p-4 text-left font-semibold">Date acq.</th>
+              <th className="p-4 text-right font-semibold">Valeur brute</th>
+              <th className="p-4 text-right font-semibold">Amort. cumulés</th>
+              <th className="p-4 text-right font-semibold">VNC</th>
+              <th className="p-4 text-center font-semibold">Statut</th>
+              <th className="p-4 text-center font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} className="p-8 text-center text-gray-400">Chargement...</td></tr>
+              <tr><td colSpan={9} className="p-12 text-center text-muted-foreground font-medium animate-pulse">Chargement...</td></tr>
             ) : assets.length === 0 ? (
-              <tr><td colSpan={9} className="p-8 text-center text-gray-400">Aucune immobilisation</td></tr>
+              <tr><td colSpan={9} className="p-12 text-center text-muted-foreground border-dashed border-border/50">Aucune immobilisation trouvée</td></tr>
             ) : assets.map((asset) => (
-              <tr key={asset.id} className="border-t hover:bg-gray-50">
-                <td className="p-3 font-mono text-sm font-medium">{asset.code}</td>
-                <td className="p-3 text-sm">{asset.label}</td>
-                <td className="p-3 text-sm text-gray-500">{categoryLabels[asset.category] || asset.category}</td>
-                <td className="p-3 text-sm">{formatDate(asset.acquisitionDate)}</td>
-                <td className="p-3 text-right font-mono text-sm">{formatMAD(asset.acquisitionValue)}</td>
-                <td className="p-3 text-right font-mono text-sm text-orange-600">{formatMAD(asset.cumulativeAmortization)}</td>
-                <td className="p-3 text-right font-mono text-sm font-medium">{formatMAD(asset.netBookValue)}</td>
-                <td className="p-3 text-center">
+              <tr key={asset.id} className="border-t border-border/50 hover:bg-muted/40 transition-colors">
+                <td className="p-4 font-mono text-sm font-bold text-primary tracking-wide">{asset.code}</td>
+                <td className="p-4 text-sm font-medium">{asset.label}</td>
+                <td className="p-4 text-sm text-muted-foreground">{categoryLabels[asset.category] || asset.category}</td>
+                <td className="p-4 text-sm text-muted-foreground">{formatDate(asset.acquisitionDate)}</td>
+                <td className="p-4 text-right font-mono text-sm text-foreground">{formatMAD(asset.acquisitionValue)}</td>
+                <td className="p-4 text-right font-mono text-sm font-medium text-amber-600 dark:text-amber-400">{formatMAD(asset.cumulativeAmortization)}</td>
+                <td className="p-4 text-right font-mono text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatMAD(asset.netBookValue)}</td>
+                <td className="p-4 text-center">
                   <Badge variant={statusLabels[asset.status]?.variant || "secondary"}>
                     {statusLabels[asset.status]?.label || asset.status}
                   </Badge>
                 </td>
-                <td className="p-3 text-center">
+                <td className="p-4 text-center">
                   <Link href={`/fixed-assets/${asset.id}`}>
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                      <Eye className="h-3.5 w-3.5" />
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-primary transition-colors">
+                      <Eye className="h-4 w-4" />
                     </Button>
                   </Link>
                 </td>

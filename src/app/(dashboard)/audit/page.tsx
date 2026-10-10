@@ -342,12 +342,14 @@ export default function AuditPage() {
 
   if (!companyId) {
     return (
-      <div className="p-6">
-        <div className="rounded-lg border border-dashed p-10 text-center">
-          <ShieldAlert className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-          <h1 className="text-xl font-semibold">Audit & Compliance</h1>
+      <div className="p-6 max-w-7xl mx-auto animate-in fade-in duration-500">
+        <div className="rounded-xl border border-dashed border-border/50 bg-card/30 backdrop-blur-sm p-12 text-center max-w-2xl mx-auto mt-12">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted/50 mb-6">
+            <ShieldAlert className="h-10 w-10 text-muted-foreground" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">Audit & Compliance</h1>
           <p className="mt-2 text-muted-foreground">
-            Selectionnez une societe pour lancer l&apos;analyse d&apos;audit.
+            Sélectionnez une société pour lancer l&apos;analyse d&apos;audit.
           </p>
         </div>
       </div>
@@ -356,12 +358,14 @@ export default function AuditPage() {
 
   if (!currentFiscalYearId) {
     return (
-      <div className="p-6">
-        <div className="rounded-lg border border-dashed p-10 text-center">
-          <ShieldAlert className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-          <h1 className="text-xl font-semibold">Audit & Compliance</h1>
+      <div className="p-6 max-w-7xl mx-auto animate-in fade-in duration-500">
+        <div className="rounded-xl border border-dashed border-border/50 bg-card/30 backdrop-blur-sm p-12 text-center max-w-2xl mx-auto mt-12">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted/50 mb-6">
+            <ShieldAlert className="h-10 w-10 text-muted-foreground" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">Audit & Compliance</h1>
           <p className="mt-2 text-muted-foreground">
-            Selectionnez un exercice pour afficher les analyses de cette periode.
+            Sélectionnez un exercice pour afficher les analyses de cette période.
           </p>
         </div>
       </div>
@@ -382,13 +386,13 @@ export default function AuditPage() {
   ).length;
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-8 p-6 max-w-7xl mx-auto animate-in fade-in duration-500">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary mb-1">
             Audit & Compliance
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground font-medium">
             Agent 6 - Surfaces d&apos;anomalies, comportements inhabituels et
             support contextuel pour auditeurs
           </p>
@@ -424,71 +428,71 @@ export default function AuditPage() {
         </Card>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
+      <div className="grid gap-6 md:grid-cols-4">
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Analyses</CardTitle>
-            <FileSearch className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 bg-primary/10 rounded-full">
+              <FileSearch className="h-4 w-4 text-primary" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{agentRuns.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Executions de l&apos;agent
-            </p>
+            <div className="text-3xl font-bold font-mono">{agentRuns.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">Exécutions de l&apos;agent</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Alertes critiques</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-500" />
+            <div className="p-2 bg-red-500/10 rounded-full">
+              <AlertTriangle className="h-4 w-4 text-red-500" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold font-mono text-red-600 dark:text-red-400">
               {analysisResult ? criticalCount : "-"}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Anomalies a investiguer en priorite
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Anomalies à investiguer en priorité</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Flags de comportement</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 bg-orange-500/10 rounded-full">
+              <Users className="h-4 w-4 text-orange-500" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold font-mono text-orange-600 dark:text-orange-400">
               {analysisResult
                 ? suspiciousFlags.length
                 : pendingSuggestions.length || "-"}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Signaux comportementaux remontes
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Signaux comportementaux remontés</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Notes d&apos;audit</CardTitle>
-            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 bg-blue-500/10 rounded-full">
+              <ShieldCheck className="h-4 w-4 text-blue-500" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold font-mono text-blue-600 dark:text-blue-400">
               {analysisResult ? supportNotes.length : "-"}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Contextes et procedures proposes
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Contextes et procédures proposés</p>
           </CardContent>
         </Card>
       </div>
 
       {analysisResult ? (
         <>
-          <Card>
+          <Card className="bg-card/60 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden">
             <CardHeader>
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div className="space-y-1">
@@ -604,7 +608,7 @@ export default function AuditPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-card/60 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Anomaly alerts</CardTitle>
@@ -642,7 +646,7 @@ export default function AuditPage() {
                       <TableRow key={`${alert.title}-${index}`}>
                         <TableCell>{severityBadge(alert.severity)}</TableCell>
                         <TableCell>{alert.area}</TableCell>
-                        <TableCell className="max-w-[360px] whitespace-normal">
+                        <TableCell className="max-w-90 whitespace-normal">
                           <p className="font-medium">{alert.title}</p>
                           <p className="text-sm text-muted-foreground">
                             {alert.description}
@@ -665,7 +669,7 @@ export default function AuditPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-card/60 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Suspicious behavior flags</CardTitle>
@@ -709,7 +713,7 @@ export default function AuditPage() {
                             </p>
                           ) : null}
                         </TableCell>
-                        <TableCell className="max-w-[300px] whitespace-normal text-sm text-muted-foreground">
+                        <TableCell className="max-w-75 whitespace-normal text-sm text-muted-foreground">
                           {flag.recommendedInvestigation}
                         </TableCell>
                       </TableRow>
@@ -720,7 +724,7 @@ export default function AuditPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-card/60 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Audit support notes</CardTitle>

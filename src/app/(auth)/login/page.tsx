@@ -65,9 +65,9 @@ export default function LoginPage() {
   }
 
   return (
-    <Card>
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold tracking-tight">
+    <Card className="bg-card/60 backdrop-blur-xl border-border/50 shadow-2xl">
+      <CardHeader className="text-center space-y-2">
+        <CardTitle className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary">
           SmartAccountingAI
         </CardTitle>
         <CardDescription>

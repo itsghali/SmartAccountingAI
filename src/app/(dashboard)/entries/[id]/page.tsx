@@ -159,7 +159,7 @@ export default function EntryDetailPage() {
   const pieceRef = entry.piece || entry.reference;
 
   return (
-    <div className="p-6 max-w-300 mx-auto">
+    <div className="p-6 max-w-7500 mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">

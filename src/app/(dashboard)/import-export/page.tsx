@@ -143,23 +143,23 @@ function ImportCard({
   };
 
   return (
-    <Card>
-      <CardContent className="pt-5">
-        <div className="flex items-start gap-4">
-          <div className="shrink-0 p-2 bg-blue-50 rounded-lg text-blue-600">{icon}</div>
+    <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:shadow-md group">
+      <CardContent className="pt-6">
+        <div className="flex items-start gap-5">
+          <div className="shrink-0 p-3 bg-primary/10 rounded-xl text-primary transition-colors group-hover:bg-primary/20">{icon}</div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold text-gray-900">{title}</h3>
-              <Badge variant="secondary" className="text-xs">{acceptedFormats}</Badge>
+            <div className="flex items-center gap-3 mb-1.5">
+              <h3 className="font-semibold text-foreground text-lg">{title}</h3>
+              <Badge variant="secondary" className="text-xs bg-muted text-muted-foreground">{acceptedFormats}</Badge>
             </div>
-            <p className="text-sm text-gray-500 mb-3">{description}</p>
+            <p className="text-sm text-muted-foreground mb-4">{description}</p>
 
             {/* Format instructions */}
-            <div className="bg-gray-50 rounded-md p-3 mb-3 border">
-              <p className="text-xs font-medium text-gray-600 mb-1.5">Colonnes requises :</p>
-              <div className="flex flex-wrap gap-1">
+            <div className="bg-muted/40 rounded-lg p-3 mb-4 border border-border/50">
+              <p className="text-xs font-medium text-foreground mb-2">Colonnes requises :</p>
+              <div className="flex flex-wrap gap-1.5">
                 {columns.map((col) => (
-                  <code key={col} className="text-xs bg-white border border-gray-200 px-1.5 py-0.5 rounded font-mono text-gray-700">
+                  <code key={col} className="text-[11px] bg-background border border-border/50 px-2 py-0.5 rounded font-mono text-muted-foreground">
                     {col}
                   </code>
                 ))}
@@ -182,8 +182,8 @@ function ImportCard({
                     onChange={handleFileChange}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
-                  <div className="flex items-center gap-2 border border-dashed rounded-md px-3 py-1.5 text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors cursor-pointer">
-                    <Upload className="h-3.5 w-3.5 shrink-0" />
+                  <div className="flex items-center gap-2 border border-dashed border-border/60 bg-muted/20 rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer">
+                    <Upload className="h-4 w-4 shrink-0 text-primary/70" />
                     <span className="truncate">
                       {selectedFile ? selectedFile.name : "Choisir un fichier..."}
                     </span>
@@ -226,14 +226,14 @@ function ExportCard({ icon, title, description, filename, onExport }: ExportCard
   };
 
   return (
-    <Card>
-      <CardContent className="pt-5">
-        <div className="flex items-center gap-4">
-          <div className="shrink-0 p-2 bg-green-50 rounded-lg text-green-600">{icon}</div>
+    <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:shadow-md group">
+      <CardContent className="pt-6">
+        <div className="flex items-center gap-5">
+          <div className="shrink-0 p-3 bg-emerald-500/10 rounded-xl text-emerald-600 dark:text-emerald-400 transition-colors group-hover:bg-emerald-500/20">{icon}</div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-gray-900">{title}</h3>
-            <p className="text-sm text-gray-500 mt-0.5">{description}</p>
-            <p className="text-xs text-gray-400 mt-1 font-mono">{filename}</p>
+            <h3 className="font-semibold text-foreground text-lg">{title}</h3>
+            <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
+            <p className="text-xs text-muted-foreground/70 mt-1.5 font-mono bg-muted/50 inline-block px-2 py-0.5 rounded">{filename}</p>
           </div>
           <Button onClick={handleExport} disabled={exporting} className="shrink-0">
             <Download className="h-4 w-4 mr-2" />
@@ -409,14 +409,14 @@ export default function ImportExportPage() {
   };
 
   if (!currentCompanyId) {
-    return <div className="p-6 text-gray-500">Veuillez sélectionner une société.</div>;
+    return <div className="p-6 text-muted-foreground">Veuillez sélectionner une société.</div>;
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Import / Export</h1>
-        <p className="text-gray-500 mt-1">
+    <div className="p-6 max-w-5xl mx-auto animate-in fade-in duration-500">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary mb-1">Import / Export</h1>
+        <p className="text-muted-foreground font-medium">
           Importez ou exportez vos données comptables au format CSV ou Excel.
         </p>
       </div>
@@ -482,14 +482,16 @@ export default function ImportExportPage() {
           </div>
 
           {/* Notice */}
-          <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="mt-8 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl shadow-sm">
             <div className="flex items-start gap-3">
-              <Package className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="p-2 bg-amber-500/20 rounded-lg shrink-0">
+                <Package className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+              </div>
               <div>
-                <p className="text-sm font-medium text-amber-800">Format de fichier</p>
-                <p className="text-sm text-amber-700 mt-0.5">
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-400">Format de fichier</p>
+                <p className="text-sm text-amber-700/80 dark:text-amber-500/80 mt-1">
                   Les fichiers CSV doivent utiliser le point-virgule (;) comme séparateur et l&apos;encodage UTF-8.
-                  Les dates doivent être au format <code className="bg-amber-100 px-1 rounded">YYYY-MM-DD</code>.
+                  Les dates doivent être au format <code className="bg-amber-500/20 px-1.5 py-0.5 rounded font-mono text-xs">YYYY-MM-DD</code>.
                   Les montants utilisent le point (.) comme séparateur décimal.
                 </p>
               </div>
@@ -534,12 +536,14 @@ export default function ImportExportPage() {
           </div>
 
           {/* Notice */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="mt-8 p-4 bg-primary/5 border border-primary/10 rounded-xl shadow-sm">
             <div className="flex items-start gap-3">
-              <Download className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+              <div className="p-2 bg-primary/10 rounded-lg shrink-0">
+                <Download className="h-5 w-5 text-primary" />
+              </div>
               <div>
-                <p className="text-sm font-medium text-blue-800">Fichiers CSV</p>
-                <p className="text-sm text-blue-700 mt-0.5">
+                <p className="text-sm font-semibold text-primary">Fichiers CSV</p>
+                <p className="text-sm text-muted-foreground mt-1">
                   Les exports sont au format CSV (séparateur point-virgule, encodage UTF-8 avec BOM)
                   directement ouvrable dans Excel. L&apos;exercice sélectionné dans la barre de navigation est utilisé
                   pour les exports liés à un exercice comptable.

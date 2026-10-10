@@ -95,8 +95,8 @@ function PostTreeNode({
   return (
     <div>
       <div
-        className="flex items-center gap-2 py-1.5 px-3 hover:bg-gray-50 rounded text-sm"
-        style={{ paddingLeft: `${12 + depth * 20}px` }}
+        className="flex items-center gap-3 py-2 px-4 hover:bg-muted/40 transition-colors rounded-md text-sm cursor-pointer"
+        style={{ paddingLeft: `${16 + depth * 24}px` }}
       >
         {hasChildren ? (
           <button
@@ -110,19 +110,19 @@ function PostTreeNode({
             )}
           </button>
         ) : (
-          <span className="w-3.5" />
+          <span className="w-4" />
         )}
-        <span className="font-mono text-xs font-semibold text-blue-700 w-20 shrink-0">
+        <span className="font-mono text-xs font-bold text-primary w-20 shrink-0 tracking-wide">
           {node.code}
         </span>
-        <span className="flex-1 text-gray-800">{node.label}</span>
+        <span className="flex-1 text-foreground font-medium">{node.label}</span>
         {node.parentId ? (
-          <span className="text-xs text-gray-400 italic">sous-poste</span>
+          <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">sous-poste</span>
         ) : (
-          <span className="text-xs text-gray-400">racine</span>
+          <span className="text-[10px] uppercase tracking-wider font-semibold text-primary/70 bg-primary/10 px-2 py-0.5 rounded-full">racine</span>
         )}
         {!node.isActive && (
-          <Badge variant="secondary" className="text-xs">
+          <Badge variant="secondary" className="text-[10px] uppercase tracking-wider bg-muted text-muted-foreground ml-2">
             Inactif
           </Badge>
         )}
@@ -195,13 +195,15 @@ function PostsSection({ gridId }: { gridId: string }) {
   const tree = buildTree(posts);
 
   return (
-    <div className="bg-gray-50 border-t border-gray-100 px-4 py-3">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-          <GitBranch className="h-4 w-4 text-blue-500" />
+    <div className="bg-muted/5 border-t border-border/50 px-6 py-5 shadow-inner">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <div className="p-1.5 bg-primary/10 rounded-md">
+            <GitBranch className="h-4 w-4 text-primary" />
+          </div>
           Postes analytiques
-          <span className="text-xs font-normal text-gray-400">
-            ({posts.length} poste{posts.length !== 1 ? "s" : ""})
+          <span className="text-xs font-normal text-muted-foreground ml-1 bg-muted px-2 py-0.5 rounded-full">
+            {posts.length} poste{posts.length !== 1 ? "s" : ""}
           </span>
         </div>
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
@@ -276,13 +278,13 @@ function PostsSection({ gridId }: { gridId: string }) {
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-400 py-2">Chargement...</p>
+        <div className="p-6 text-center text-muted-foreground font-medium animate-pulse">Chargement...</div>
       ) : posts.length === 0 ? (
-        <p className="text-sm text-gray-400 py-2 italic">
-          Aucun poste. Cliquez sur &quot;Nouveau poste&quot; pour commencer.
+        <p className="text-sm text-muted-foreground py-6 text-center border border-dashed border-border/50 rounded-lg bg-card/30">
+          Aucun poste. Cliquez sur "Nouveau poste" pour commencer.
         </p>
       ) : (
-        <div className="border rounded-lg bg-white overflow-hidden">
+        <div className="border border-border/50 rounded-xl bg-card/60 backdrop-blur-sm overflow-hidden shadow-sm">
           {tree.map((node) => (
             <PostTreeNode key={node.id} node={node} />
           ))}
@@ -397,15 +399,15 @@ export default function AnalyticalGridsPage() {
 
   if (!currentCompanyId) {
     return (
-      <div className="p-6 text-gray-500">Veuillez sélectionner une société.</div>
+      <div className="p-6 text-muted-foreground">Veuillez sélectionner une société.</div>
     );
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-6xl mx-auto animate-in fade-in duration-500">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary">
           Grilles Analytiques
         </h1>
         <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
@@ -455,34 +457,34 @@ export default function AnalyticalGridsPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardContent className="pt-4">
-            <p className="text-sm text-gray-500">Total grilles</p>
-            <p className="text-3xl font-bold text-gray-900">{totalGrids}</p>
+      <div className="grid grid-cols-3 gap-6 mb-8">
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
+          <CardContent className="pt-6">
+            <p className="text-sm font-medium text-muted-foreground mb-1">Total grilles</p>
+            <p className="text-3xl font-bold text-foreground font-mono">{totalGrids}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <p className="text-sm text-gray-500">Grilles actives</p>
-            <p className="text-3xl font-bold text-green-600">{activeGrids}</p>
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
+          <CardContent className="pt-6">
+            <p className="text-sm font-medium text-muted-foreground mb-1">Grilles actives</p>
+            <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">{activeGrids}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <p className="text-sm text-gray-500">Total postes</p>
-            <p className="text-3xl font-bold text-blue-600">{totalPosts}</p>
+        <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
+          <CardContent className="pt-6">
+            <p className="text-sm font-medium text-muted-foreground mb-1">Total postes</p>
+            <p className="text-3xl font-bold text-primary font-mono">{totalPosts}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filter */}
-      <div className="flex gap-4 mb-4">
+      <div className="flex gap-4 mb-6 p-4 bg-card/60 backdrop-blur-md border border-border/50 shadow-sm rounded-xl">
         <Select
           value={filterActive}
           onValueChange={(v) => v !== null && setFilterActive(v)}
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-45">
             <SelectValue placeholder="Tous les statuts" />
           </SelectTrigger>
           <SelectContent>
@@ -494,29 +496,29 @@ export default function AnalyticalGridsPage() {
       </div>
 
       {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
+      <div className="bg-card/60 backdrop-blur-xl border border-border/50 rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/20">
         <table className="w-full">
-          <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+          <thead className="bg-muted/50 text-xs uppercase text-muted-foreground border-b border-border/50">
             <tr>
-              <th className="p-3 text-left w-8"></th>
-              <th className="p-3 text-left">Code</th>
-              <th className="p-3 text-left">Libellé</th>
-              <th className="p-3 text-center">Nb postes</th>
-              <th className="p-3 text-center">Statut</th>
-              <th className="p-3 text-center">Actions</th>
+              <th className="p-4 text-left w-10"></th>
+              <th className="p-4 text-left font-semibold">Code</th>
+              <th className="p-4 text-left font-semibold">Libellé</th>
+              <th className="p-4 text-center font-semibold">Nb postes</th>
+              <th className="p-4 text-center font-semibold">Statut</th>
+              <th className="p-4 text-center font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="p-8 text-center text-gray-400">
+                <td colSpan={6} className="p-12 text-center text-muted-foreground font-medium animate-pulse">
                   Chargement...
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="p-8 text-center text-gray-400">
-                  Aucune grille analytique
+                <td colSpan={6} className="p-12 text-center text-muted-foreground border-dashed border-border/50">
+                  Aucune grille analytique trouvée.
                 </td>
               </tr>
             ) : (
@@ -524,10 +526,10 @@ export default function AnalyticalGridsPage() {
                 <>
                   <tr
                     key={grid.id}
-                    className="border-t hover:bg-gray-50 transition-colors"
+                    className="border-t border-border/50 hover:bg-muted/40 transition-colors"
                   >
                     {/* Expand toggle */}
-                    <td className="p-3">
+                    <td className="p-4 text-center">
                       <button
                         onClick={() => toggleExpand(grid.id)}
                         className="text-gray-400 hover:text-gray-700"
@@ -544,24 +546,24 @@ export default function AnalyticalGridsPage() {
                         )}
                       </button>
                     </td>
-                    <td className="p-3 font-mono text-sm font-semibold text-blue-700">
+                    <td className="p-4 font-mono text-sm font-bold text-primary tracking-wide">
                       {grid.code}
                     </td>
-                    <td className="p-3 text-sm text-gray-800">{grid.label}</td>
-                    <td className="p-3 text-center">
-                      <span className="inline-flex items-center gap-1 text-sm text-gray-600">
-                        <Layers className="h-3.5 w-3.5 text-gray-400" />
-                        {grid._count.posts}
+                    <td className="p-4 text-sm font-medium text-foreground">{grid.label}</td>
+                    <td className="p-4 text-center">
+                      <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground bg-muted px-2 py-1 rounded-md border border-border/50">
+                        <Layers className="h-3.5 w-3.5" />
+                        <span className="font-semibold">{grid._count.posts}</span>
                       </span>
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-4 text-center">
                       {grid.isActive ? (
-                        <Badge variant="default">Actif</Badge>
+                        <Badge variant="default" className="bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25 dark:text-emerald-400 border-none shadow-none">Actif</Badge>
                       ) : (
-                        <Badge variant="secondary">Inactif</Badge>
+                        <Badge variant="secondary" className="bg-muted text-muted-foreground border-none shadow-none">Inactif</Badge>
                       )}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-4 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <Button
                           variant="ghost"
@@ -601,7 +603,7 @@ export default function AnalyticalGridsPage() {
                     </td>
                   </tr>
                   {expandedGridId === grid.id && (
-                    <tr key={`${grid.id}-posts`} className="border-t">
+                    <tr key={`${grid.id}-posts`} className="border-t border-border/50 bg-muted/5">
                       <td colSpan={6} className="p-0">
                         <PostsSection gridId={grid.id} />
                       </td>

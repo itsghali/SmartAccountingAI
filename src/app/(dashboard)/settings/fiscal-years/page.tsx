@@ -35,17 +35,17 @@ const statusConfig: Record<
   OPEN: {
     label: "Ouvert",
     className:
-      "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-800",
+      "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
   },
   PROVISIONAL_CLOSE: {
     label: "Clôture provisoire",
     className:
-      "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-amber-100 text-amber-800",
+      "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-amber-500/15 text-amber-700 dark:text-amber-400",
   },
   CLOSED: {
     label: "Clôturé",
     className:
-      "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-800",
+      "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-destructive/15 text-destructive",
   },
 };
 
@@ -179,9 +179,9 @@ export default function FiscalYearsSettingsPage() {
   }
 
   return (
-    <div className="p-6 max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
+    <div className="p-6 max-w-4xl animate-in fade-in duration-500">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary">
           Exercices Comptables
         </h1>
         <Button onClick={() => setShowForm(!showForm)}>
@@ -192,7 +192,7 @@ export default function FiscalYearsSettingsPage() {
 
       {/* Create Form */}
       {showForm && (
-        <Card className="mb-6">
+        <Card className="mb-8 bg-card/60 backdrop-blur-xl border-primary/20 shadow-sm transition-all duration-300">
           <CardHeader>
             <CardTitle className="text-base">Nouvel Exercice Comptable</CardTitle>
           </CardHeader>
@@ -249,22 +249,26 @@ export default function FiscalYearsSettingsPage() {
 
       {/* Fiscal Years List */}
       {loading ? (
-        <div className="text-gray-400 py-8 text-center">Chargement...</div>
+        <div className="text-muted-foreground py-8 text-center">Chargement...</div>
       ) : fiscalYears.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-gray-400">
-            <CalendarDays className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-            <p>Aucun exercice comptable.</p>
+        <Card className="border-dashed border-border/50 bg-card/30 backdrop-blur-sm shadow-none">
+          <CardContent className="py-12 text-center text-muted-foreground">
+            <div className="mx-auto mb-4 flex justify-center">
+              <div className="rounded-full bg-muted/50 p-4">
+                <CalendarDays className="h-10 w-10 text-muted-foreground" />
+              </div>
+            </div>
+            <p className="font-semibold text-foreground mb-1">Aucun exercice comptable.</p>
             <p className="text-sm mt-1">
               Créez votre premier exercice comptable pour commencer.
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {fiscalYears.map((fy) => (
-            <Card key={fy.id}>
-              <CardContent className="flex items-center justify-between pt-0">
+            <Card key={fy.id} className="bg-card/60 backdrop-blur-xl border-border/50 shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/20 group pt-6">
+              <CardContent className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <CalendarDays className="h-5 w-5 text-gray-400" />
                   <div>
