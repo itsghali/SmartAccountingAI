@@ -424,7 +424,7 @@ export default function Sidebar() {
 
         className={cn(
 
-          "fixed left-0 top-0 z-50 flex h-screen flex-col bg-sidebar border-r border-sidebar-border text-sidebar-foreground transition-all duration-300",
+          "fixed left-0 top-0 z-50 flex h-screen flex-col bg-sidebar border-r border-sidebar-border text-sidebar-foreground transition-all duration-300 shrink-0",
 
           "lg:relative lg:z-auto",
 

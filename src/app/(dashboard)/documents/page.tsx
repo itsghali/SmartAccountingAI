@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 import { useAppContext } from "@/hooks/useAppContext";
 import { 
   FileText, 
@@ -38,6 +39,7 @@ interface Document {
     id: string;
     status: string;
     completedAt: string | null;
+    errorMessage: string | null;
   }>;
   _count: {
     extractedFields: number;
@@ -46,7 +48,7 @@ interface Document {
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   UPLOADED: { label: "Uploaded", color: "bg-slate-100 text-slate-700", icon: <FileText className="size-4" /> },
-  PROCESSING: { label: "Processing", color: "bg-blue-100 text-blue-700", icon: <Clock className="size-4" /> },
+  PROCESSING: { label: "Processing", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 ring-1 ring-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.2)]", icon: <RefreshCw className="size-4 animate-spin" /> },
   REVIEW_REQUIRED: { label: "Review Required", color: "bg-yellow-100 text-yellow-700", icon: <AlertCircle className="size-4" /> },
   APPROVED: { label: "Approved", color: "bg-green-100 text-green-700", icon: <CheckCircle className="size-4" /> },
   REJECTED: { label: "Rejected", color: "bg-red-100 text-red-700", icon: <XCircle className="size-4" /> },
@@ -262,13 +264,26 @@ export default function DocumentsPage() {
         <div className="space-y-2">
           {visibleDocuments.map((doc) => {
             const status = statusConfig[doc.status] || statusConfig.UPLOADED!;
+            const latestRun = doc.extractionRuns?.[0];
             return (
               <div
                 key={doc.id}
-                className="flex items-center gap-4 rounded-xl border border-border/50 bg-card/60 backdrop-blur-md p-4 shadow-sm hover:shadow-md hover:border-primary/20 hover:bg-muted/30 transition-all duration-300 group hover:-translate-y-0.5"
+                className={cn(
+                  "relative overflow-hidden flex items-center gap-4 rounded-xl border border-border/50 bg-card/60 backdrop-blur-md p-4 shadow-sm hover:shadow-md hover:border-primary/20 hover:bg-muted/30 transition-all duration-300 group",
+                  doc.status !== "PROCESSING" && "hover:-translate-y-0.5",
+                  doc.status === "PROCESSING" && "border-blue-500/30 bg-blue-50/30 dark:bg-blue-900/10 shadow-[0_4px_20px_rgba(59,130,246,0.1)]"
+                )}
               >
-                <div className="shrink-0 rounded-lg bg-muted/50 p-2.5 group-hover:bg-primary/10 transition-colors">
-                  {doc.mimeType.startsWith("image/") ? (
+                {doc.status === "PROCESSING" && (
+                  <div className="absolute inset-0 pointer-events-none rounded-xl ring-2 ring-blue-500/20 animate-pulse" />
+                )}
+                <div className={cn(
+                  "shrink-0 rounded-lg bg-muted/50 p-2.5 transition-colors",
+                  doc.status === "PROCESSING" ? "bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400" : "group-hover:bg-primary/10"
+                )}>
+                  {doc.status === "PROCESSING" ? (
+                    <RefreshCw className="size-6 animate-spin" />
+                  ) : doc.mimeType.startsWith("image/") ? (
                     <FileImage className="size-6 text-muted-foreground group-hover:text-primary transition-colors" />
                   ) : (
                     <FileText className="size-6 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -276,9 +291,14 @@ export default function DocumentsPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-medium truncate">{doc.originalFilename}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {formatFileSize(doc.fileSize)} • {new Date(doc.createdAt).toLocaleDateString()}
-                  </p>
+                  <div className="text-sm text-muted-foreground flex flex-col gap-0.5">
+                    <span>{formatFileSize(doc.fileSize)} • {new Date(doc.createdAt).toLocaleDateString()}</span>
+                    {doc.status === "FAILED" && (
+                      <span className="text-destructive text-xs line-clamp-2" title={latestRun?.errorMessage || "An unknown error occurred during processing."}>
+                        Error: {latestRun?.errorMessage || "An unknown error occurred during processing."}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <Badge className={status.color}>
                   <span className="flex items-center gap-1">
