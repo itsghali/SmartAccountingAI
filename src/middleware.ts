@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
-
 // Only initialize ratelimit if environment variables are present (fallback to pass-through if not in production yet)
+// eslint-disable-next-line prefer-const
 let ratelimit: Ratelimit | null = null;
 
 try {

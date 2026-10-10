@@ -233,6 +233,7 @@ export default function DashboardPage() {
                       boxShadow: "0 10px 40px -10px rgba(0,0,0,0.3)"
                     }}
                     itemStyle={{ fontWeight: 500 }}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     formatter={(value: any) => [`${formatMAD(Number(value))} MAD`]}
                   />
                   <Legend wrapperStyle={{ paddingTop: "20px", opacity: 0.8, fontSize: "13px" }} />
@@ -310,6 +311,7 @@ export default function DashboardPage() {
                       boxShadow: "0 10px 40px -10px rgba(0,0,0,0.3)"
                     }}
                     itemStyle={{ fontWeight: 500, color: "inherit" }}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     formatter={(value: any, name: any, props: any) => [
                       `${formatMAD(Number(value))} MAD`,
                       `${name} (${((props.payload.percent ?? 0) * 100).toFixed(1)}%)`

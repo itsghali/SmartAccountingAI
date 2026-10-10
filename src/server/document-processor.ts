@@ -175,6 +175,7 @@ export async function processDocument(
           if (!block.lines) continue;
           for (const line of block.lines) {
             if (!line.words) continue;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             extractedText += line.words.map((w: any) => w.value).join(" ") + "\n";
           }
           extractedText += "\n";

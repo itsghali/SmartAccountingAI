@@ -77,7 +77,7 @@ export default function VATDeclarationsPage() {
     } catch {
       // ignore
     }
-  }, [currentCompanyId, currentFiscalYearId]);
+  }, [currentCompanyId, currentFiscalYearId, selectedDeclaration]);
 
   useEffect(() => {
     loadDeclarations();
@@ -168,7 +168,7 @@ export default function VATDeclarationsPage() {
             disabled={computing}
             className="border-gray-300"
           >
-            <RefreshCcw className={`h-4 w-4 mr-2 ${computing ? 'animate-spin' : ''}`} /> Calculer l'année
+            <RefreshCcw className={`h-4 w-4 mr-2 ${computing ? 'animate-spin' : ''}`} /> Calculer l&apos;année
           </Button>
           <Select value={periodType} onValueChange={(v) => v !== null && setPeriodType(v as "MONTHLY" | "QUARTERLY")}>
             <SelectTrigger className="w-40">

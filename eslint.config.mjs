@@ -17,6 +17,11 @@ const eslintConfig = defineConfig([
       "check_db.js",
       "patch-security.js",
       "rename.js",
+      "doctr/**",
+      "ocr_worker/**",
+      "scratch/**",
+      "check2.js",
+      "fixVat.js",
     ],
   },]);
 

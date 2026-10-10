@@ -11,7 +11,7 @@
     "lint:ci": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit --pretty false",
     "test": "vitest run",
-    "test:ci": "vitest run --reporter=basic",
+    "test:ci": "vitest run",
     "coverage": "vitest run --coverage --reporter=basic",
     "compose:validate": "powershell -NoProfile -File scripts/validate-compose.ps1 -FilePath docker-compose.yml",
     "compose:validate:prod": "powershell -NoProfile -File scripts/validate-compose.ps1 -FilePath docker-compose.prod.yml",

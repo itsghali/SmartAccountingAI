@@ -281,7 +281,7 @@ function PostsSection({ gridId }: { gridId: string }) {
         <div className="p-6 text-center text-muted-foreground font-medium animate-pulse">Chargement...</div>
       ) : posts.length === 0 ? (
         <p className="text-sm text-muted-foreground py-6 text-center border border-dashed border-border/50 rounded-lg bg-card/30">
-          Aucun poste. Cliquez sur "Nouveau poste" pour commencer.
+          Aucun poste. Cliquez sur &quot;Nouveau poste&quot; pour commencer.
         </p>
       ) : (
         <div className="border border-border/50 rounded-xl bg-card/60 backdrop-blur-sm overflow-hidden shadow-sm">

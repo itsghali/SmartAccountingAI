@@ -6,36 +6,37 @@ import { prisma } from "@/server/prisma";
 vi.mock("@/server/prisma", () => ({
   prisma: {
     journalEntryLine: {
-      findMany: vi.fn(),
+      groupBy: vi.fn(),
     },
+    account: {
+      findMany: vi.fn(),
+    }
   },
 }));
 
 describe("Trial Balance Calculations", () => {
   it("calculates trial balance totals correctly from DB rows", async () => {
-    // Mock the DB response
-    const mockLines = [
+    // Mock the DB response for groupBy
+    const mockGrouped = [
       {
         accountCode: "5141",
-        debit: new Decimal(1000),
-        credit: new Decimal(0),
-        account: { label: "Banque", classNumber: 5 },
-      },
-      {
-        accountCode: "5141",
-        debit: new Decimal(0),
-        credit: new Decimal(200),
-        account: { label: "Banque", classNumber: 5 },
+        companyId: "company-1",
+        _sum: { debit: new Decimal(1000), credit: new Decimal(200) },
       },
       {
         accountCode: "7111",
-        debit: new Decimal(0),
-        credit: new Decimal(800),
-        account: { label: "Ventes de marchandises", classNumber: 7 },
+        companyId: "company-1",
+        _sum: { debit: new Decimal(0), credit: new Decimal(800) },
       },
-    ] as unknown as Awaited<ReturnType<typeof prisma.journalEntryLine.findMany>>;
+    ] as any;
     
-    vi.mocked(prisma.journalEntryLine.findMany).mockResolvedValue(mockLines);
+    vi.mocked(prisma.journalEntryLine.groupBy).mockResolvedValue(mockGrouped);
+
+    // Mock account details
+    vi.mocked(prisma.account.findMany).mockResolvedValue([
+      { code: "5141", label: "Banque", classNumber: 5 },
+      { code: "7111", label: "Ventes de marchandises", classNumber: 7 },
+    ] as any);
 
     const result = await computeTrialBalance("company-1", "fiscal-year-1");
 
