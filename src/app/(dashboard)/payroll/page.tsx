@@ -372,7 +372,28 @@ export default function PayrollPage() {
               </TableHeader>
               <TableBody>
                 {agentRuns.map((run) => (
-                  <TableRow key={run.id} className="hover:bg-muted/40 transition-colors border-border/50">
+                  <TableRow 
+                    key={run.id} 
+                    className="hover:bg-muted/40 transition-colors border-border/50 cursor-pointer"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`/api/agent-runs/${run.id}?fiscalYearId=${currentFiscalYearId}`);
+                        if (!res.ok) throw new Error("Impossible de charger l'historique");
+                        const data = await res.json();
+                        setAnalysisResult({
+                          fiscalYearId: currentFiscalYearId!,
+                          summary: data.structuredOutput?.summary || "",
+                          suggestions: data.structuredOutput?.suggestions || [],
+                          runId: data.runId,
+                          modelVersion: data.modelVersion,
+                          durationMs: data.durationMs
+                        });
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : "Erreur de chargement");
+                      }
+                    }}
+                  >
                     <TableCell className="text-muted-foreground">{formatDateTime(run.createdAt)}</TableCell>
                     <TableCell>
                       <Badge
