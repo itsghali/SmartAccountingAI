@@ -1,0 +1,50 @@
+name: docs
+on:
+  push:
+    branches: main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs-deploy:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python: ["3.11"]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+        with:
+          python-version: ${{ matrix.python }}
+          extras: viz,html,docs
+          cache-models: "false"
+
+      - name: Build documentation
+        run: cd docs && bash build.sh
+      - name: Restore workspace ref
+        if: always()
+        run: git checkout -f ${{ github.sha }}
+
+      - name: Documentation sanity check
+        run: test -e docs/build/index.html || exit
+
+      - name: Install SSH Client 🔑
+        uses: webfactory/ssh-agent@v0.10.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_DEPLOY_KEY }}
+
+      - name: Deploy to Github Pages
+        uses: JamesIves/github-pages-deploy-action@v4.9.0
+        with:
+          BRANCH: gh-pages
+          FOLDER: 'docs/build'
+          COMMIT_MESSAGE: '[skip ci] Documentation updates'
+          CLEAN: true
+          SSH: true

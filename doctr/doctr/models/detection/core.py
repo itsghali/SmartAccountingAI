@@ -1,0 +1,110 @@
+# Copyright (C) 2021-2026, Mindee.
+
+# This program is licensed under the Apache License 2.0.
+# See LICENSE or go to <https://opensource.org/licenses/Apache-2.0> for full license details.
+
+
+import cv2
+import numpy as np
+
+from doctr.utils.multithreading import multithread_exec
+from doctr.utils.repr import NestedObject
+
+__all__ = ["DetectionPostProcessor"]
+
+
+class DetectionPostProcessor(NestedObject):
+    """Abstract class to postprocess the raw output of the model
+
+    Args:
+        box_thresh (float): minimal objectness score to consider a box
+        bin_thresh (float): threshold to apply to segmentation raw heatmap
+        assume straight_pages (bool): if True, fit straight boxes only
+    """
+
+    def __init__(self, box_thresh: float = 0.5, bin_thresh: float = 0.5, assume_straight_pages: bool = True) -> None:
+        self.box_thresh = box_thresh
+        self.bin_thresh = bin_thresh
+        self.assume_straight_pages = assume_straight_pages
+        self._opening_kernel: np.ndarray = np.ones((3, 3), dtype=np.uint8)
+
+    def extra_repr(self) -> str:
+        return f"bin_thresh={self.bin_thresh}, box_thresh={self.box_thresh}"
+
+    @staticmethod
+    def box_score(pred: np.ndarray, points: np.ndarray, assume_straight_pages: bool = True) -> float:
+        """Compute the confidence score for a polygon : mean of the p values on the polygon
+
+        Args:
+            pred (np.ndarray): p map returned by the model
+            points: coordinates of the polygon
+            assume_straight_pages: if True, fit straight boxes only
+
+        Returns:
+            polygon objectness
+        """
+        h, w = pred.shape[:2]
+
+        if assume_straight_pages:
+            xmin = np.clip(np.floor(points[:, 0].min()).astype(np.int32), 0, w - 1)
+            xmax = np.clip(np.ceil(points[:, 0].max()).astype(np.int32), 0, w - 1)
+            ymin = np.clip(np.floor(points[:, 1].min()).astype(np.int32), 0, h - 1)
+            ymax = np.clip(np.ceil(points[:, 1].max()).astype(np.int32), 0, h - 1)
+            return pred[ymin : ymax + 1, xmin : xmax + 1].mean()
+
+        else:
+            pts: np.ndarray = points.reshape((-1, 2)).astype(np.int32)
+            xmin = np.clip(pts[:, 0].min(), 0, w - 1)
+            xmax = np.clip(pts[:, 0].max(), 0, w - 1)
+            ymin = np.clip(pts[:, 1].min(), 0, h - 1)
+            ymax = np.clip(pts[:, 1].max(), 0, h - 1)
+            mask: np.ndarray = np.zeros((ymax - ymin + 1, xmax - xmin + 1), dtype=np.uint8)
+            cv2.fillPoly(mask, [pts - np.array([[xmin, ymin]], dtype=np.int32)], 1)
+            vals = pred[ymin : ymax + 1, xmin : xmax + 1][mask.astype(bool)]
+            return float(vals.mean()) if vals.size > 0 else 0.0
+
+    def bitmap_to_boxes(
+        self,
+        pred: np.ndarray,
+        bitmap: np.ndarray,
+    ) -> np.ndarray:
+        raise NotImplementedError
+
+    def _process_sample(self, proba_map: np.ndarray) -> list[np.ndarray]:
+        """Performs postprocessing for a single sample
+
+        Args:
+            proba_map: probability map of shape (H, W, C)
+
+        Returns:
+            list of C class predictions, each of shape (*, 5) or (*, 6)
+        """
+        return [
+            self.bitmap_to_boxes(
+                proba_map[..., idx],
+                # Erosion + dilation on the binary map
+                cv2.morphologyEx(
+                    (proba_map[..., idx] >= self.bin_thresh).astype(np.uint8),
+                    cv2.MORPH_OPEN,
+                    self._opening_kernel,
+                ),
+            )
+            for idx in range(proba_map.shape[-1])
+        ]
+
+    def __call__(
+        self,
+        proba_map,
+    ) -> list[list[np.ndarray]]:
+        """Performs postprocessing for a list of model outputs
+
+        Args:
+            proba_map: probability map of shape (N, H, W, C)
+
+        Returns:
+            list of N class predictions (for each input sample), where each class predictions is a list of C tensors
+        of shape (*, 5) or (*, 6)
+        """
+        if proba_map.ndim != 4:
+            raise AssertionError(f"arg `proba_map` is expected to be 4-dimensional, got {proba_map.ndim}.")
+        return list(multithread_exec(self._process_sample, proba_map))

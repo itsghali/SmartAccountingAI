@@ -1,0 +1,156 @@
+import numpy as np
+import pytest
+
+from doctr.io.elements import Document, Page, Table, TableCell
+
+
+def common_test(json_response, expected_response):
+    first_pred = json_response[0]  # it's enough to test for the first file because the same image is used twice
+
+    assert isinstance(first_pred["name"], str)
+    assert (
+        isinstance(first_pred["dimensions"], (tuple, list))
+        and len(first_pred["dimensions"]) == 2
+        and all(isinstance(dim, int) for dim in first_pred["dimensions"])
+    )
+    assert isinstance(first_pred["layout"], list)
+    for region in first_pred["layout"]:
+        assert isinstance(region["type"], str)
+        assert isinstance(region["confidence"], (int, float))
+        assert isinstance(region["geometry"], (tuple, list))
+    for item, expected_item in zip(first_pred["items"], expected_response["items"]):
+        for block, expected_block in zip(item["blocks"], expected_item["blocks"]):
+            np.testing.assert_allclose(block["geometry"], expected_block["geometry"], rtol=1e-2)
+            assert isinstance(block["objectness_score"], (int, float))
+            for line, expected_line in zip(block["lines"], expected_block["lines"]):
+                np.testing.assert_allclose(line["geometry"], expected_line["geometry"], rtol=1e-2)
+                assert isinstance(line["objectness_score"], (int, float))
+                for word, expected_word in zip(line["words"], expected_line["words"]):
+                    np.testing.assert_allclose(word["geometry"], expected_word["geometry"], rtol=1e-2)
+                    assert isinstance(word["objectness_score"], (int, float))
+                    assert isinstance(word["value"], str) and word["value"] == expected_word["value"]
+                    assert isinstance(word["confidence"], (int, float))
+                    assert isinstance(word["crop_orientation"], dict)
+                    assert isinstance(word["crop_orientation"]["value"], int) and isinstance(
+                        word["crop_orientation"]["confidence"], (float, int, type(None))
+                    )
+
+
+@pytest.mark.asyncio
+async def test_ocr_box(test_app_asyncio, mock_detection_image, mock_ocr_response):
+    headers = {
+        "accept": "application/json",
+    }
+    params = {"det_arch": "db_resnet50", "reco_arch": "crnn_vgg16_bn"}
+    files = [
+        ("files", ("test.jpg", mock_detection_image, "image/jpeg")),
+        ("files", ("test2.jpg", mock_detection_image, "image/jpeg")),
+    ]
+    response = await test_app_asyncio.post("/ocr", params=params, files=files, headers=headers)
+    assert response.status_code == 200
+    json_response = response.json()
+
+    expected_box_response = mock_ocr_response["box"]
+    assert isinstance(json_response, list) and len(json_response) == 2
+    common_test(json_response, expected_box_response)
+
+
+@pytest.mark.asyncio
+async def test_ocr_poly(test_app_asyncio, mock_detection_image, mock_ocr_response):
+    headers = {
+        "accept": "application/json",
+    }
+    params = {"det_arch": "db_resnet50", "reco_arch": "crnn_vgg16_bn", "assume_straight_pages": False}
+    files = [
+        ("files", ("test.jpg", mock_detection_image, "image/jpeg")),
+        ("files", ("test2.jpg", mock_detection_image, "image/jpeg")),
+    ]
+    response = await test_app_asyncio.post("/ocr", params=params, files=files, headers=headers)
+    assert response.status_code == 200
+    json_response = response.json()
+
+    expected_poly_response = mock_ocr_response["poly"]
+    assert isinstance(json_response, list) and len(json_response) == 2
+    common_test(json_response, expected_poly_response)
+
+
+@pytest.mark.asyncio
+async def test_ocr_layout(test_app_asyncio, mock_detection_image):
+    headers = {
+        "accept": "application/json",
+    }
+    params = {"det_arch": "db_resnet50", "reco_arch": "crnn_vgg16_bn", "detect_layout": True}
+    files = [
+        ("files", ("test.jpg", mock_detection_image, "image/jpeg")),
+    ]
+    response = await test_app_asyncio.post("/ocr", params=params, files=files, headers=headers)
+    assert response.status_code == 200
+    json_response = response.json()
+
+    assert isinstance(json_response, list) and len(json_response) == 1
+    assert "layout" in json_response[0] and isinstance(json_response[0]["layout"], list)
+    for region in json_response[0]["layout"]:
+        assert isinstance(region["type"], str)
+        assert isinstance(region["confidence"], (int, float))
+        assert len(region["geometry"]) in (4, 8)
+
+
+@pytest.mark.asyncio
+async def test_ocr_tables(test_app_asyncio, mock_detection_image):
+    headers = {
+        "accept": "application/json",
+    }
+    params = {"det_arch": "db_resnet50", "reco_arch": "crnn_vgg16_bn", "detect_tables": True}
+    files = [
+        ("files", ("test.jpg", mock_detection_image, "image/jpeg")),
+    ]
+    response = await test_app_asyncio.post("/ocr", params=params, files=files, headers=headers)
+    assert response.status_code == 200
+    json_response = response.json()
+
+    assert isinstance(json_response, list) and len(json_response) == 1
+    # detect_tables enables the layout model as well
+    assert "layout" in json_response[0] and isinstance(json_response[0]["layout"], list)
+    assert "tables" in json_response[0] and isinstance(json_response[0]["tables"], list)
+    for table in json_response[0]["tables"]:
+        assert isinstance(table["num_rows"], int) and isinstance(table["num_cols"], int)
+        assert isinstance(table["confidence"], (int, float))
+        assert len(table["geometry"]) in (4, 8)
+        assert isinstance(table["cells"], list)
+        for cell in table["cells"]:
+            assert isinstance(cell["value"], str)
+            assert isinstance(cell["confidence"], (int, float))
+            assert len(cell["geometry"]) in (4, 8)
+            assert all(isinstance(cell[k], int) for k in ("row_start", "row_end", "col_start", "col_end"))
+            assert isinstance(cell["objectness_score"], (int, float))
+
+
+@pytest.mark.asyncio
+async def test_ocr_table_cells(test_app_asyncio, mock_detection_image, monkeypatch):
+    # The score of each cell of the table structure model is returned (None for the cells without a score)
+    geometry = ((0.1, 0.1), (0.5, 0.2))
+    cells = [
+        TableCell("a", 0.9, geometry, 0, 0, 0, 0, objectness_score=0.8123),
+        TableCell("", 0.4, geometry, 0, 0, 1, 1),
+    ]
+    table = Table(cells, num_rows=1, num_cols=2, geometry=((0.1, 0.1), (0.9, 0.2)), confidence=0.8123)
+    doc = Document([Page(np.zeros((100, 100, 3), dtype=np.uint8), [], 0, (100, 100), tables=[table])])
+    monkeypatch.setattr("app.routes.ocr.init_predictor", lambda request: lambda pages: doc)
+
+    files = [("files", ("test.jpg", mock_detection_image, "image/jpeg"))]
+    response = await test_app_asyncio.post("/ocr", files=files, headers={"accept": "application/json"})
+    assert response.status_code == 200
+    out_cells = response.json()[0]["tables"][0]["cells"]
+    assert [cell["objectness_score"] for cell in out_cells] == [0.81, None]
+
+
+@pytest.mark.asyncio
+async def test_ocr_invalid_file(test_app_asyncio, mock_txt_file):
+    headers = {
+        "accept": "application/json",
+    }
+    files = [
+        ("files", ("test.txt", mock_txt_file)),
+    ]
+    response = await test_app_asyncio.post("/ocr", files=files, headers=headers)
+    assert response.status_code == 400

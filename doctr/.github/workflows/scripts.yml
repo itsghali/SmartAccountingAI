@@ -1,0 +1,89 @@
+name: scripts
+
+on:
+  push:
+    branches: main
+  pull_request:
+    branches: main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  test-analyze:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run analysis script
+        run: |
+          wget https://github.com/mindee/doctr/releases/download/v0.1.0/sample.pdf
+          python scripts/analyze.py sample.pdf --noblock --detection db_mobilenet_v3_large
+
+  test-detect-text:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run detection script
+        run: |
+          wget https://github.com/mindee/doctr/releases/download/v0.1.0/sample.pdf
+          python scripts/detect_text.py sample.pdf --detection db_mobilenet_v3_large
+
+  test-evaluate:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run evaluation script
+        run: |
+          python scripts/evaluate.py db_resnet50 crnn_vgg16_bn --samples 10
+          python scripts/evaluate_kie.py db_resnet50 crnn_vgg16_bn --samples 10
+
+  test-collectenv:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run environment collection script
+        run: python scripts/collect_env.py

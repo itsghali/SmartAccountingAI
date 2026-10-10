@@ -1,0 +1,359 @@
+# Copyright (C) 2021-2026, Mindee.
+
+# This program is licensed under the Apache License 2.0.
+# See LICENSE or go to <https://opensource.org/licenses/Apache-2.0> for full license details.
+
+import heapq
+from collections.abc import Callable, Sequence
+from math import floor, isnan
+from statistics import median_low
+from typing import Any, Literal, TypeAlias
+
+import cv2
+import numpy as np
+from langdetect import LangDetectException, detect_langs
+
+from doctr.utils.geometry import rotate_image
+
+__all__ = [
+    "ConfidenceAggregation",
+    "aggregate_confidence",
+    "estimate_orientation",
+    "get_language",
+    "invert_data_structure",
+    "mask_boxes",
+    "rectify_crops",
+    "rectify_loc_preds",
+]
+
+ConfidenceAggregation: TypeAlias = (
+    Literal["mean", "min", "max", "median", "geometric_mean", "harmonic_mean"] | Callable[[np.ndarray], float]
+)
+
+
+def _geometric_mean(scores: np.ndarray) -> float:
+    # numerically stable form of prod(scores) ** (1 / N), a zero score yields 0
+    with np.errstate(divide="ignore"):
+        return float(np.exp(np.mean(np.log(scores, dtype=np.float64))))
+
+
+def _harmonic_mean(scores: np.ndarray) -> float:
+    # a zero score yields 0
+    with np.errstate(divide="ignore"):
+        return float(scores.size / np.sum(1.0 / scores.astype(np.float64)))
+
+
+_CONFIDENCE_AGGREGATIONS: dict[str, Callable[[np.ndarray], Any]] = {
+    "mean": np.mean,
+    "min": np.min,
+    "max": np.max,
+    "median": np.median,
+    "geometric_mean": _geometric_mean,
+    "harmonic_mean": _harmonic_mean,
+}
+
+
+def _resolve_confidence_aggregation(method: ConfidenceAggregation) -> Callable[[np.ndarray], Any]:
+    """Return the function of a confidence aggregation method, raise a `ValueError` if it is unknown"""
+    if callable(method):
+        return method
+    # the type check comes first: an unhashable value (e.g. a list) can not be looked up
+    if not isinstance(method, str) or method not in _CONFIDENCE_AGGREGATIONS:
+        raise ValueError(
+            f"Unknown confidence aggregation {method!r}, expected a callable or one of {list(_CONFIDENCE_AGGREGATIONS)}"
+        )
+    return _CONFIDENCE_AGGREGATIONS[method]
+
+
+def _confidence_aggregation_repr(method: ConfidenceAggregation) -> str:
+    """Return the name of a confidence aggregation method to display it in a `repr`"""
+    return repr(method) if isinstance(method, str) else getattr(method, "__name__", type(method).__name__)
+
+
+def aggregate_confidence(
+    scores: np.ndarray | Sequence[float],
+    method: ConfidenceAggregation = "mean",
+) -> float:
+    """Aggregate several scores (e.g. the character probabilities of a word) into a single confidence score
+
+    >>> from doctr.models._utils import aggregate_confidence
+    >>> aggregate_confidence([0.99, 0.98, 0.12, 0.99], "min")
+    0.12
+
+    Available methods:
+        - "mean": arithmetic mean, a single low score can be hidden by many high ones
+        - "min": the lowest score, a single low score is enough to lower the confidence
+        - "max": the highest score
+        - "median": the median score, robust to outliers
+        - "geometric_mean": `exp(mean(log(scores)))`, i.e. the exponential of the average log-probability
+        - "harmonic_mean": strongly penalizes low scores
+        - a Python callable taking the 1D array of scores and returning a float
+
+    Args:
+        scores: the scores to aggregate, expected in [0, 1]
+        method: the aggregation method
+
+    Returns:
+        the aggregated confidence clipped to [0, 1], 0 if there is no score or if the aggregation is NaN (e.g. a
+        callable averaging an empty selection)
+    """
+    aggregate = _resolve_confidence_aggregation(method)
+    scores = np.asarray(scores).ravel()
+    if scores.size == 0:
+        return 0.0
+    value = float(np.asarray(aggregate(scores)).squeeze())
+    return 0.0 if isnan(value) else min(max(value, 0.0), 1.0)
+
+
+def get_max_width_length_ratio(contour: np.ndarray) -> float:
+    """Get the maximum shape ratio of a contour.
+
+    Args:
+        contour: the contour from cv2.findContour
+
+    Returns:
+        the maximum shape ratio
+    """
+    _, (w, h), _ = cv2.minAreaRect(contour)
+    if w == 0 or h == 0:
+        return 0.0
+    return max(w / h, h / w)
+
+
+def estimate_orientation(
+    img: np.ndarray,
+    general_page_orientation: tuple[int, float] | None = None,
+    n_ct: int = 70,
+    ratio_threshold_for_lines: float = 3,
+    min_confidence: float = 0.2,
+    lower_area: int = 100,
+) -> int:
+    """Estimate the angle of the general document orientation based on the
+     lines of the document and the assumption that they should be horizontal.
+
+    Args:
+        img: the img or bitmap to analyze (H, W, C)
+        general_page_orientation: the general orientation of the page (angle [0, 90, 180, 270 (-90)], confidence)
+            estimated by a model
+        n_ct: the number of contours used for the orientation estimation
+        ratio_threshold_for_lines: this is the ratio w/h used to discriminates lines
+        min_confidence: the minimum confidence to consider the general_page_orientation
+        lower_area: the minimum area of a contour to be considered
+
+    Returns:
+        the estimated angle of the page (clockwise, negative for left side rotation, positive for right side rotation)
+    """
+    assert len(img.shape) == 3 and img.shape[-1] in [1, 3], f"Image shape {img.shape} not supported"
+
+    # Convert image to grayscale if necessary
+    if img.shape[-1] == 3:
+        gray_img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        gray_img = cv2.medianBlur(gray_img, 5)
+        thresh = cv2.threshold(gray_img, thresh=0, maxval=255, type=cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
+    else:
+        thresh = img.astype(np.uint8)
+
+    page_orientation, orientation_confidence = general_page_orientation or (0, 0.0)
+    is_confident = page_orientation is not None and orientation_confidence >= min_confidence
+    base_angle = page_orientation if is_confident else 0
+
+    if is_confident:
+        # We rotate the image to the general orientation which improves the detection
+        # No expand needed bitmap is already padded
+        thresh = rotate_image(thresh, -base_angle)
+    else:  # That's only required if we do not work on the detection models bin map
+        # try to merge words in lines
+        (h, w) = img.shape[:2]
+        k_x = max(1, (floor(w / 100)))
+        k_y = max(1, (floor(h / 100)))
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (k_x, k_y))
+        thresh = cv2.dilate(thresh, kernel, iterations=1)
+
+    # extract contours
+    contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Filter contours & keep the n_ct most elongated ones
+    contours = heapq.nlargest(
+        n_ct,
+        (contour for contour in contours if cv2.contourArea(contour) > lower_area),
+        key=get_max_width_length_ratio,
+    )
+
+    angles = []
+    for contour in contours:
+        _, (w, h), angle = cv2.minAreaRect(contour)
+
+        # OpenCV version-proof normalization: force 'w' to be the long side
+        # so the angle is consistently relative to the major axis.
+        # https://github.com/opencv/opencv/pull/28051/changes
+        if w < h:
+            w, h = h, w
+            angle -= 90
+
+        # Normalize angle to be within [-90, 90]
+        while angle <= -90:
+            angle += 180
+        while angle > 90:
+            angle -= 180
+
+        if h > 0:
+            if w / h > ratio_threshold_for_lines:  # select only contours with ratio like lines
+                angles.append(angle)
+            elif w / h < 1 / ratio_threshold_for_lines:  # if lines are vertical, substract 90 degree
+                angles.append(angle - 90)
+
+    if len(angles) == 0:
+        skew_angle = 0  # in case no angles is found
+    else:
+        # median_low picks a value from the data to avoid outliers
+        median = -median_low(angles)
+        skew_angle = -round(median) if abs(median) != 0 else 0
+
+        # Resolve the 90-degree flip ambiguity.
+        # If the estimation is exactly 90/-90, it's usually a vertical detection of horizontal lines.
+        if abs(skew_angle) == 90:
+            skew_angle = 0
+
+    # combine with the general orientation and the estimated angle
+    # Apply the detected skew to our base orientation
+    final_angle = base_angle + skew_angle
+
+    # Standardize result to [-179, 180] range to handle wrap-around cases (e.g., 180 + -31)
+    while final_angle > 180:
+        final_angle -= 360
+    while final_angle <= -180:
+        final_angle += 360
+
+    if is_confident:
+        # If the estimated angle is perpendicular, treat it as 0 to avoid wrong flips
+        if abs(skew_angle) % 90 == 0:
+            return page_orientation
+
+        # special case where the estimated angle is mostly wrong:
+        # case 1: - and + swapped
+        # case 2: estimated angle is completely wrong
+        # so in this case we prefer the general page orientation
+        if abs(skew_angle) == abs(page_orientation) and page_orientation != 0:
+            return page_orientation
+
+    return int(
+        final_angle
+    )  # return the clockwise angle (negative - left side rotation, positive - right side rotation)
+
+
+def rectify_crops(
+    crops: list[np.ndarray],
+    orientations: list[int],
+) -> list[np.ndarray]:
+    """Rotate each crop of the list according to the predicted orientation:
+    0: already straight, no rotation
+    1: 90 ccw, rotate 3 times ccw
+    2: 180, rotate 2 times ccw
+    3: 270 ccw, rotate 1 time ccw
+    """
+    # Inverse predictions (if angle of +90 is detected, rotate by -90)
+    orientations = [4 - pred if pred != 0 else 0 for pred in orientations]
+    return (
+        [crop if orientation == 0 else np.rot90(crop, orientation) for orientation, crop in zip(orientations, crops)]
+        if len(orientations) > 0
+        else []
+    )
+
+
+def rectify_loc_preds(
+    page_loc_preds: np.ndarray,
+    orientations: list[int],
+) -> np.ndarray | None:
+    """Orient the quadrangle (Polygon4P) according to the predicted orientation,
+    so that the points are in this order: top L, top R, bot R, bot L if the crop is readable
+    """
+    return (
+        np.stack(
+            [
+                np.roll(page_loc_pred, orientation, axis=0)
+                for orientation, page_loc_pred in zip(orientations, page_loc_preds)
+            ],
+            axis=0,
+        )
+        if len(orientations) > 0
+        else None
+    )
+
+
+def get_language(text: str) -> tuple[str, float]:
+    """Get languages of a text using langdetect model.
+    Get the language with the highest probability or no language if only a few words or a low probability
+
+    Args:
+        text (str): text
+
+    Returns:
+        The detected language in ISO 639 code and confidence score
+    """
+    try:
+        lang = detect_langs(text.lower())[0]
+    except LangDetectException:
+        return "unknown", 0.0
+    if len(text) <= 1 or (len(text) <= 5 and lang.prob <= 0.2):
+        return "unknown", 0.0
+    return lang.lang, lang.prob
+
+
+def mask_boxes(img: np.ndarray, boxes: np.ndarray, fill_value: int = 255) -> np.ndarray:
+    """Blank out regions of an image by filling the given boxes with a constant value.
+
+    Handles both box formats produced by the models: straight boxes of shape `(N, 4)` in
+    `(x_min, y_min, x_max, y_max)` form and rotated 4-point polygons of shape `(N, 4, 2)`, with
+    coordinates relative to the image size.
+
+    Args:
+        img: the image to mask, shape `(H, W)` or `(H, W, C)`
+        boxes: relative coordinates of the regions to fill, shape `(N, 4)` or `(N, 4, 2)`
+        fill_value: pixel value used to fill the masked regions
+
+    Returns:
+        a copy of the image with the boxes filled (the input is left untouched)
+    """
+    boxes = np.asarray(boxes, dtype=np.float32)
+    if boxes.size == 0:
+        return img
+
+    h, w = img.shape[:2]
+    if boxes.ndim == 2:  # straight boxes (N, 4) -> (N, 4, 2) corner polygons
+        polys = np.empty((boxes.shape[0], 4, 2), dtype=np.float32)
+        polys[:, 0] = boxes[:, [0, 1]]  # (x_min, y_min)
+        polys[:, 1] = boxes[:, [2, 1]]  # (x_max, y_min)
+        polys[:, 2] = boxes[:, [2, 3]]  # (x_max, y_max)
+        polys[:, 3] = boxes[:, [0, 3]]  # (x_min, y_max)
+    else:  # rotated polygons (N, 4, 2)
+        polys = boxes.copy()
+
+    # relative -> absolute pixel corners, clipped to the image
+    polys[..., 0] = np.clip(polys[..., 0] * w, 0, w)
+    polys[..., 1] = np.clip(polys[..., 1] * h, 0, h)
+    polys = polys.round().astype(np.int32)
+
+    img = img.copy()
+    color = (int(fill_value),) * (img.shape[2] if img.ndim == 3 else 1)
+    cv2.fillPoly(img, list(polys), color=color)
+    return img
+
+
+def invert_data_structure(
+    x: list[dict[str, Any]] | dict[str, list[Any]],
+) -> list[dict[str, Any]] | dict[str, list[Any]]:
+    """Invert a list of dict of elements to a dict of list of elements and the other way around
+
+    Args:
+        x: a list of dictionaries with the same keys or a dictionary of lists of the same length
+
+    Returns:
+        dictionary of list when x is a list of dictionaries or a list of dictionaries when x is dictionary of lists
+    """
+    if isinstance(x, dict):
+        assert len({len(v) for v in x.values()}) == 1, "All the lists in the dictionary should have the same length."
+        return [dict(zip(x, t)) for t in zip(*x.values())]
+    elif isinstance(x, list):
+        return {k: [dic[k] for dic in x] for k in x[0]}
+    else:
+        raise TypeError(f"Expected input to be either a dict or a list, got {type(x)} instead.")

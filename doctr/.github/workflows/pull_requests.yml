@@ -1,0 +1,35 @@
+name: pull_requests
+
+on:
+  pull_request:
+    branches: main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  docs-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+        with:
+          python-version: "3.11"
+          extras: viz,html,docs
+          cache-models: "false"
+
+      - name: Build documentation
+        run: cd docs && bash build.sh
+
+      - name: Restore workspace ref
+        if: always()
+        run: git checkout -f ${{ github.sha }}
+
+      - name: Documentation sanity check
+        run: test -e docs/build/index.html || exit

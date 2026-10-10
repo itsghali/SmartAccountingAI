@@ -1,0 +1,38 @@
+name: builds
+
+on:
+  push:
+    branches: main
+  pull_request:
+    branches: main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v7
+      - if: matrix.os == 'macos-latest'
+        name: Install MacOS prerequisites
+        run: brew install cairo pango gdk-pixbuf libffi
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+        with:
+          python-version: ${{ matrix.python }}
+          # html extra (weasyprint) needs GTK on Windows, so it stays excluded there
+          extras: ${{ matrix.os == 'windows-latest' && 'viz' || 'viz,html' }}
+          cache-models: "false"
+      - name: Import package
+        run: python -c "import doctr; print(doctr.__version__)"
