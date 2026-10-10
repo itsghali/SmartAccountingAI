@@ -833,6 +833,36 @@ async function runDocumentProcessorChunk(
   let lastRawOutput: string | undefined;
   let lastError: string | undefined;
 
+  // STEP 1: Run OCR via docTR microservice
+  let ocrText = "";
+  try {
+    for (const base64Page of imageBase64Pages) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+      
+      const response = await fetch("http://localhost:8000/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image_base64: base64Page }),
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+      
+      if (!response.ok) {
+        throw new Error(`docTR microservice failed: ${response.statusText}`);
+      }
+      const data = await response.json();
+      ocrText += data.raw_text + "\n\n";
+    }
+  } catch (error) {
+    console.error("[docTR OCR] Failed to extract text:", error);
+    return {
+      error: `Failed to extract text using OCR service: ${error instanceof Error ? error.message : "Unknown error"}`,
+      iterations: 0,
+    };
+  }
+
+  // STEP 2: Structure the OCR Text via LLM
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     const correctiveInstruction = lastError
       ? `Previous attempt issue: ${lastError}. Fix the JSON and schema problems completely.`
@@ -844,7 +874,7 @@ async function runDocumentProcessorChunk(
       `${prompt}
 
 ${pageInstruction}
-Extract ONLY what is visible on these pages.
+Extract ONLY the data found in the provided OCR text.
 If a financial table continues across multiple pages, reuse consistent table_code, row_code, and column names so results can be merged later.
 Do not summarize unseen pages. Do not omit zero-valued rows that are visible on these pages.
 For liasse fiscale and état de synthèse pages, focus on reading the numeric table cells exactly as printed. Do not emit a row with every numeric cell null unless the source row itself appears blank.
@@ -855,18 +885,13 @@ You must respond with a valid JSON object matching this schema: ${JSON.stringify
     );
 
     const userMessage = new HumanMessage({
-      content: [
-        {
-          type: "text",
-          text: `${context.userPrompt}
+      content: `${context.userPrompt}
 
-These pages are only one chunk of the document. Return fields, line_items, and financial_tables for what is visible on these pages only.${options.strictFinancialTableRetry ? " This retry is specifically for recovering financial statement tables, so prioritize visible CPC, bilan, ESG, and tresorerie tables." : ""}`,
-        },
-        ...imageBase64Pages.map((page) => ({
-          type: "image_url" as const,
-          image_url: { url: `data:${imageMime};base64,${page}` },
-        })),
-      ],
+These pages are only one chunk of the document. Return fields, line_items, and financial_tables for what is visible on these pages only.${options.strictFinancialTableRetry ? " This retry is specifically for recovering financial statement tables, so prioritize visible CPC, bilan, ESG, and tresorerie tables." : ""}
+
+--- OCR TEXT EXTRACTED BY DOCTR ---
+${ocrText.trim()}
+-----------------------------------`,
     });
 
     const response = await model.invoke([systemMessage, userMessage]);
