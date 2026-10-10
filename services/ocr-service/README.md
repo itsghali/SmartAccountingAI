@@ -10,15 +10,17 @@ It runs as a standalone FastAPI server that the Next.js backend communicates wit
 
 ## Installation
 
-1. Create a virtual environment (Optional but recommended):
+We recommend using [uv](https://github.com/astral-sh/uv) for lightning-fast Python package installation.
+
+1. Create a virtual environment and activate it:
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
 2. Install the dependencies:
 ```bash
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
 
 *(Note: The requirements install the CPU-optimized version of PyTorch by default via `python-doctr[torch]`. If you have a CUDA GPU, you can install the CUDA version of PyTorch for even faster inference).*
