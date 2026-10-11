@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/server/auth";
+import { checkPermission } from "@/server/permissions";
 import { prisma } from "@/server/prisma";
 
 // GET /api/analytical/grids/[id] — fetch grid with posts (flat list)
@@ -23,6 +24,10 @@ export async function GET(
 
   if (!grid) return NextResponse.json({ error: "Grille introuvable" }, { status: 404 });
 
+  if (!(await checkPermission(grid.companyId, "canAccessAnalytical"))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   return NextResponse.json(grid);
 }
 
@@ -35,6 +40,14 @@ export async function PATCH(
   if (!session?.user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
 
   const { id } = await params;
+
+  const existing = await prisma.analyticalGrid.findUnique({ where: { id } });
+  if (!existing) return NextResponse.json({ error: "Grille introuvable" }, { status: 404 });
+
+  if (!(await checkPermission(existing.companyId, "canAccessAnalytical"))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const body = await request.json();
 
   const grid = await prisma.analyticalGrid.update({
@@ -50,3 +63,4 @@ export async function PATCH(
 
   return NextResponse.json(grid);
 }
+

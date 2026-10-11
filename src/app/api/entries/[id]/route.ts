@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/server/auth";
+import { checkPermission } from "@/server/permissions";
 import { prisma } from "@/server/prisma";
 import { syncVATDeclarationForDate } from "@/server/calculations/vatSync";
 
@@ -26,6 +27,11 @@ export async function GET(
 
   if (!entry) return NextResponse.json({ error: "Écriture introuvable" }, { status: 404 });
 
+  const companyId = entry.journal.companyId;
+  if (!(await checkPermission(companyId, "canAccessEntries"))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   return NextResponse.json(entry);
 }
 
@@ -37,13 +43,21 @@ export async function PUT(
   if (!session?.user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
 
   const { id } = await params;
-  const entry = await prisma.journalEntry.findUnique({ where: { id } });
+  const entry = await prisma.journalEntry.findUnique({
+    where: { id },
+    include: { journal: { select: { companyId: true } } },
+  });
   if (!entry) return NextResponse.json({ error: "Écriture introuvable" }, { status: 404 });
 
+  const companyId = entry.journal.companyId;
   const body = await request.json();
 
   // If validating
   if (body.action === "validate") {
+    if (!(await checkPermission(companyId, "canValidateEntries"))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     if (entry.status !== "DRAFT") {
       return NextResponse.json({ error: "Seules les écritures brouillon peuvent être validées" }, { status: 400 });
     }
@@ -61,6 +75,10 @@ export async function PUT(
 
   // If reversing (contrepassation)
   if (body.action === "reverse") {
+    if (!(await checkPermission(companyId, "canAccessEntries"))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     if (entry.status !== "VALIDATED") {
       return NextResponse.json({ error: "Seules les écritures validées peuvent être contrepassées" }, { status: 400 });
     }
@@ -111,10 +129,10 @@ export async function PUT(
     });
     
     // Background sync for VAT (update for both the reversal date and original date if they differ, though usually same period)
-    const companyId = (await prisma.journal.findUnique({ where: { id: entry.journalId } }))?.companyId;
-    if (companyId) {
-      syncVATDeclarationForDate(companyId, entry.fiscalYearId, entry.entryDate).catch(console.error);
-      syncVATDeclarationForDate(companyId, reversalEntry.fiscalYearId, reversalEntry.entryDate).catch(console.error);
+    const journalCompanyId = (await prisma.journal.findUnique({ where: { id: entry.journalId } }))?.companyId;
+    if (journalCompanyId) {
+      syncVATDeclarationForDate(journalCompanyId, entry.fiscalYearId, entry.entryDate).catch(console.error);
+      syncVATDeclarationForDate(journalCompanyId, reversalEntry.fiscalYearId, reversalEntry.entryDate).catch(console.error);
     }
 
     return NextResponse.json(reversalEntry);
@@ -131,8 +149,16 @@ export async function DELETE(
   if (!session?.user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
 
   const { id } = await params;
-  const entry = await prisma.journalEntry.findUnique({ where: { id } });
+  const entry = await prisma.journalEntry.findUnique({
+    where: { id },
+    include: { journal: { select: { companyId: true } } },
+  });
   if (!entry) return NextResponse.json({ error: "Écriture introuvable" }, { status: 404 });
+
+  const companyId = entry.journal.companyId;
+  if (!(await checkPermission(companyId, "canDeleteDraftEntries"))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   if (entry.status !== "DRAFT") {
     return NextResponse.json(
@@ -144,3 +170,4 @@ export async function DELETE(
   await prisma.journalEntry.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }
+

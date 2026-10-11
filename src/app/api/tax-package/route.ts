@@ -87,9 +87,29 @@ export async function POST(request: NextRequest) {
     const { cellId, value } = body;
     if (!cellId || value === undefined) {
       return NextResponse.json({ error: "cellId et value requis" }, { status: 400 });
-  if (!(await checkPermission(companyId, "canAccessTaxPackage"))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
     }
+
+    const existingCell = await prisma.taxPackageCell.findUnique({
+      where: { id: cellId },
+      include: {
+        table: {
+          include: {
+            taxPackage: {
+              select: { companyId: true, fiscalYearId: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (
+      !existingCell ||
+      existingCell.table.taxPackage.companyId !== companyId ||
+      existingCell.table.taxPackage.fiscalYearId !== fiscalYearId
+    ) {
+      return NextResponse.json({ error: "Cellule introuvable" }, { status: 404 });
+    }
+
     const cell = await prisma.taxPackageCell.update({
       where: { id: cellId },
       data: { value: new Decimal(value).toDecimalPlaces(2).toNumber() },

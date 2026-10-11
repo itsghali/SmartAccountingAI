@@ -127,6 +127,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Journal introuvable" }, { status: 404 });
   }
 
+  if (fiscalYear.companyId !== journal.companyId) {
+    return NextResponse.json(
+      { error: "L'exercice comptable et le journal doivent appartenir à la même société" },
+      { status: 400 }
+    );
+  }
+
   const companyId = journal.companyId;
   if (!(await checkPermission(companyId, "canAccessEntries"))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/server/auth";
+import { checkPermission } from "@/server/permissions";
 import { prisma } from "@/server/prisma";
 import { updateFiscalYearSchema } from "@/server/validators/fiscal-year";
 
@@ -46,6 +47,10 @@ export async function GET(
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
+    if (!(await checkPermission(result.fiscalYear.companyId, "canAccessEntries"))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     return NextResponse.json(result.fiscalYear);
   } catch (error) {
     console.error("Error fetching fiscal year:", error);
@@ -71,6 +76,10 @@ export async function PUT(
 
     if ("error" in result) {
       return NextResponse.json({ error: result.error }, { status: result.status });
+    }
+
+    if (!(await checkPermission(result.fiscalYear.companyId, "canAccessSetup"))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { fiscalYear: existing } = result;
@@ -230,6 +239,10 @@ export async function DELETE(
     }
 
     const { fiscalYear } = result;
+
+    if (!(await checkPermission(fiscalYear.companyId, "canAccessSetup"))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     // Prevent deletion of fiscal years with journal entries
     if (fiscalYear._count.journalEntries > 0) {

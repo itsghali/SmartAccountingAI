@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SuggestionStatus } from "@prisma/client";
 import { auth } from "@/server/auth";
+import { checkPermission } from "@/server/permissions";
 import { prisma } from "@/server/prisma";
 import { z } from "zod";
 import {
@@ -65,6 +66,10 @@ export async function PATCH(
 
     if (!company) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+
+    if (!(await checkPermission(document.tenantId, "canAccessEntries"))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const nextStatus =

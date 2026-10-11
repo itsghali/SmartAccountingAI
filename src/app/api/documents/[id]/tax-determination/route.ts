@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/server/auth";
+import { checkPermission } from "@/server/permissions";
 import { prisma } from "@/server/prisma";
 import {
   generateDocumentTaxDetermination,
@@ -30,19 +31,7 @@ export async function GET(
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
-    const companyAccess = await prisma.userCompanyAccess.findUnique({
-      where: {
-        userId_companyId: {
-          userId: user.id,
-          companyId: document.tenantId,
-        },
-      },
-      select: {
-        canAccessVAT: true,
-      },
-    });
-
-    if (!companyAccess?.canAccessVAT) {
+    if (!(await checkPermission(document.tenantId, "canAccessVAT"))) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
@@ -89,19 +78,7 @@ export async function POST(
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
-    const companyAccess = await prisma.userCompanyAccess.findUnique({
-      where: {
-        userId_companyId: {
-          userId: user.id,
-          companyId: document.tenantId,
-        },
-      },
-      select: {
-        canAccessVAT: true,
-      },
-    });
-
-    if (!companyAccess?.canAccessVAT) {
+    if (!(await checkPermission(document.tenantId, "canAccessVAT"))) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 

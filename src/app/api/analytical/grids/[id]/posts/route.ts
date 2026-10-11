@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/server/auth";
+import { checkPermission } from "@/server/permissions";
 import { prisma } from "@/server/prisma";
 import { z } from "zod";
 
@@ -18,6 +19,13 @@ export async function GET(
   if (!session?.user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
 
   const { id } = await params;
+
+  const grid = await prisma.analyticalGrid.findUnique({ where: { id } });
+  if (!grid) return NextResponse.json({ error: "Grille introuvable" }, { status: 404 });
+
+  if (!(await checkPermission(grid.companyId, "canAccessAnalytical"))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const posts = await prisma.analyticalPost.findMany({
     where: { gridId: id },
@@ -40,6 +48,10 @@ export async function POST(
   const grid = await prisma.analyticalGrid.findUnique({ where: { id } });
   if (!grid) return NextResponse.json({ error: "Grille introuvable" }, { status: 404 });
 
+  if (!(await checkPermission(grid.companyId, "canAccessAnalytical"))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const body = await request.json();
   const parsed = createPostSchema.safeParse(body);
   if (!parsed.success) {
@@ -59,3 +71,4 @@ export async function POST(
 
   return NextResponse.json(post, { status: 201 });
 }
+

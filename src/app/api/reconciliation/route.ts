@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { LettrageGroup, Prisma } from "@prisma/client";
 import { auth } from "@/server/auth";
+import { checkPermission } from "@/server/permissions";
 import { prisma } from "@/server/prisma";
 import Decimal from "decimal.js";
 
@@ -46,6 +47,10 @@ export async function GET(request: NextRequest) {
   if (!companyId) return NextResponse.json({ error: "companyId requis" }, { status: 400 });
   if (!fiscalYearId) return NextResponse.json({ error: "fiscalYearId requis" }, { status: 400 });
   if (!accountCode) return NextResponse.json({ error: "accountCode requis" }, { status: 400 });
+
+  if (!(await checkPermission(companyId, "canAccessEntries"))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const where: Prisma.JournalEntryLineWhereInput = {
     companyId,
@@ -126,6 +131,10 @@ export async function POST(request: NextRequest) {
   if (!accountCode) return NextResponse.json({ error: "accountCode requis" }, { status: 400 });
   if (!lineIds || !Array.isArray(lineIds) || lineIds.length === 0) {
     return NextResponse.json({ error: "lineIds requis (tableau non vide)" }, { status: 400 });
+  }
+
+  if (!(await checkPermission(companyId, "canAccessEntries"))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   // Fetch the selected lines
@@ -210,6 +219,10 @@ export async function DELETE(request: NextRequest) {
   if (!fiscalYearId) return NextResponse.json({ error: "fiscalYearId requis" }, { status: 400 });
   if (!lettrageCode) return NextResponse.json({ error: "lettrageCode requis" }, { status: 400 });
   if (!accountCode) return NextResponse.json({ error: "accountCode requis" }, { status: 400 });
+
+  if (!(await checkPermission(companyId, "canAccessEntries"))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   // Delete lettrage group and reset lines in a transaction
   await prisma.$transaction(async (tx) => {

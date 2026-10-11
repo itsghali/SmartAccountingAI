@@ -96,6 +96,10 @@ export async function POST(request: NextRequest) {
   }
 
   const data = parsed.data;
+  if (!(await checkPermission(data.companyId, "canAccessFixedAssets"))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const acquisitionValue = new Decimal(data.acquisitionValue);
   const residualValue = new Decimal(data.residualValue);
   const amortizableBase = acquisitionValue.minus(residualValue);

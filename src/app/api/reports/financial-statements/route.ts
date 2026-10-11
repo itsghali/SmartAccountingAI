@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/server/auth";
+import { checkPermission } from "@/server/permissions";
 import { prisma } from "@/server/prisma";
 import Decimal from "decimal.js";
 
@@ -35,6 +36,10 @@ export async function GET(request: NextRequest) {
       { error: "companyId et fiscalYearId requis" },
       { status: 400 }
     );
+  }
+
+  if (!(await checkPermission(companyId, "canAccessReports"))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const rawLines = await prisma.journalEntryLine.findMany({

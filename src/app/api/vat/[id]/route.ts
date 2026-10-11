@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/server/auth";
+import { checkPermission } from "@/server/permissions";
 import { prisma } from "@/server/prisma";
 
 export async function PUT(
@@ -10,26 +11,35 @@ export async function PUT(
   if (!session?.user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
 
   const { id } = await params;
+  const declaration = await prisma.vATDeclaration.findUnique({ where: { id } });
+  if (!declaration) {
+    return NextResponse.json({ error: "Déclaration TVA introuvable" }, { status: 404 });
+  }
+
+  if (!(await checkPermission(declaration.companyId, "canAccessVAT"))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const body = await request.json();
 
   if (body.action === "validate") {
-    const declaration = await prisma.vATDeclaration.update({
+    const updated = await prisma.vATDeclaration.update({
       where: { id },
       data: { status: "VALIDATED" },
     });
-    return NextResponse.json(declaration);
+    return NextResponse.json(updated);
   }
 
   if (body.action === "submit") {
-    const declaration = await prisma.vATDeclaration.update({
+    const updated = await prisma.vATDeclaration.update({
       where: { id },
       data: { status: "SUBMITTED", submissionDate: new Date() },
     });
-    return NextResponse.json(declaration);
+    return NextResponse.json(updated);
   }
 
   if (body.action === "pay") {
-    const declaration = await prisma.vATDeclaration.update({
+    const updated = await prisma.vATDeclaration.update({
       where: { id },
       data: {
         status: "PAID",
@@ -37,8 +47,9 @@ export async function PUT(
         paymentReference: body.paymentReference,
       },
     });
-    return NextResponse.json(declaration);
+    return NextResponse.json(updated);
   }
 
   return NextResponse.json({ error: "Action non reconnue" }, { status: 400 });
 }
+

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/server/auth";
+import { checkPermission } from "@/server/permissions";
 import { prisma } from "@/server/prisma";
 
 export async function GET(
@@ -25,5 +26,10 @@ export async function GET(
 
   if (!asset) return NextResponse.json({ error: "Immobilisation introuvable" }, { status: 404 });
 
+  if (!(await checkPermission(asset.companyId, "canAccessFixedAssets"))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   return NextResponse.json(asset);
 }
+

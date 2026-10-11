@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/server/auth";
+import { checkPermission } from "@/server/permissions";
 import { prisma } from "@/server/prisma";
 import { updateCompanySchema } from "@/server/validators/company";
 
@@ -39,6 +40,10 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    if (!(await checkPermission(id))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     return NextResponse.json(company);
   } catch (error) {
     console.error("Error fetching company:", error);
@@ -72,6 +77,10 @@ export async function PUT(
     }
 
     if (existing.organizationId !== session.user.organizationId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (!(await checkPermission(id, "canAccessSetup"))) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -112,6 +121,13 @@ export async function DELETE(
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (session.user.role !== "SUPER_ADMIN" && session.user.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Forbidden: Only admins can delete companies" },
+        { status: 403 }
+      );
     }
 
     const { id } = await context.params;

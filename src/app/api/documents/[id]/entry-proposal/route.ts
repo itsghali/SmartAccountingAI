@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/server/auth";
+import { checkPermission } from "@/server/permissions";
 import { prisma } from "@/server/prisma";
 import {
   generateDocumentEntryProposal,
@@ -24,6 +25,22 @@ export async function GET(
   const { id: documentId } = await params;
 
   try {
+    const document = await prisma.document.findUnique({
+      where: { id: documentId },
+      select: {
+        id: true,
+        tenantId: true,
+      },
+    });
+
+    if (!document) {
+      return NextResponse.json({ error: "Document not found" }, { status: 404 });
+    }
+
+    if (!(await checkPermission(document.tenantId, "canAccessEntries"))) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+
     const proposal = await getCurrentDocumentEntryProposal(
       documentId,
       user.organizationId
@@ -79,19 +96,7 @@ export async function POST(
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
-    const companyAccess = await prisma.userCompanyAccess.findUnique({
-      where: {
-        userId_companyId: {
-          userId: user.id,
-          companyId: document.tenantId,
-        },
-      },
-      select: {
-        canAccessEntries: true,
-      },
-    });
-
-    if (!companyAccess?.canAccessEntries) {
+    if (!(await checkPermission(document.tenantId, "canAccessEntries"))) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 

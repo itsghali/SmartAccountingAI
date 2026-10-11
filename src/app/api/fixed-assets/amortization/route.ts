@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/server/auth";
+import { checkPermission } from "@/server/permissions";
 import { prisma } from "@/server/prisma";
 import Decimal from "decimal.js";
 import {
@@ -18,8 +19,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "companyId et fiscalYearId requis" }, { status: 400 });
   }
 
+  if (!(await checkPermission(companyId, "canAccessFixedAssets"))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const fiscalYear = await prisma.fiscalYear.findUnique({ where: { id: fiscalYearId } });
-  if (!fiscalYear) return NextResponse.json({ error: "Exercice introuvable" }, { status: 404 });
+  if (!fiscalYear || fiscalYear.companyId !== companyId) {
+    return NextResponse.json({ error: "Exercice introuvable" }, { status: 404 });
+  }
   if (fiscalYear.status !== "OPEN") {
     return NextResponse.json({ error: "L'exercice est clôturé" }, { status: 400 });
   }
