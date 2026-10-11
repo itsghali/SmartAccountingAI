@@ -5,6 +5,7 @@ import { VATRegime, VATperiodType } from "@prisma/client";
 import { prisma } from "@/server/prisma";
 import Decimal from "decimal.js";
 import { computeVATDeclaration } from "@/server/calculations/vat";
+import { checkRateLimit, createRateLimitResponse } from "@/server/rate-limit";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -33,6 +34,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+
+  const rateLimitResult = await checkRateLimit("FINANCIAL_MUTATION", `vat_${session.user.id}`);
+  if (!rateLimitResult.success) {
+    return createRateLimitResponse(rateLimitResult);
+  }
 
   const body = await request.json();
   const { companyId, fiscalYearId, periodType, periodIndex, regime } = body;

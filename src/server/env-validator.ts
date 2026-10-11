@@ -66,12 +66,15 @@ export function validateEnvValues(env: Record<string, string | undefined>): EnvV
     errors.push("NEXTAUTH_URL must be a valid HTTP/HTTPS URL");
   }
 
-  // 4. Redis Token validation (if Redis REST proxy is configured)
+  // 4. Redis configuration validation (Strictly required in production for distributed rate limiting & revocation)
   const redisUrl = env.UPSTASH_REDIS_REST_URL?.trim();
   const redisToken = (env.UPSTASH_REDIS_REST_TOKEN || env.REDIS_HTTP_TOKEN)?.trim();
-  if (redisUrl && !redisToken) {
-    errors.push("UPSTASH_REDIS_REST_TOKEN (or REDIS_HTTP_TOKEN) is required when UPSTASH_REDIS_REST_URL is configured");
-  } else if (redisToken && (KNOWN_INSECURE_TOKENS.has(redisToken.toLowerCase()) || containsPlaceholder(redisToken))) {
+  if (!redisUrl) {
+    errors.push("UPSTASH_REDIS_REST_URL is required in production for distributed rate limiting and session revocation");
+  }
+  if (!redisToken) {
+    errors.push("UPSTASH_REDIS_REST_TOKEN (or REDIS_HTTP_TOKEN) is required in production for distributed rate limiting and session revocation");
+  } else if (KNOWN_INSECURE_TOKENS.has(redisToken.toLowerCase()) || containsPlaceholder(redisToken)) {
     errors.push("Redis authentication token uses an insecure default/example placeholder value");
   }
 

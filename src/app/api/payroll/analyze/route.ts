@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/server/auth";
 import { prisma } from "@/server/prisma";
 import { agentRunner } from "@/server/agents";
+import { checkRateLimit, createRateLimitResponse } from "@/server/rate-limit";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -10,6 +11,10 @@ export async function POST(request: NextRequest) {
   }
 
   const user = session.user as { id: string; organizationId: string };
+  const rateLimitResult = await checkRateLimit("AI_OR_OCR", `payroll_analyze_${user.id}`);
+  if (!rateLimitResult.success) {
+    return createRateLimitResponse(rateLimitResult);
+  }
 
   try {
     const body = await request.json();

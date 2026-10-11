@@ -1,18 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { Ratelimit } from "@upstash/ratelimit";
-// Only initialize ratelimit if environment variables are present (fallback to pass-through if not in production yet)
-// eslint-disable-next-line prefer-const
-let ratelimit: Ratelimit | null = null;
-
-try {
-  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-    // Disabled due to Upstash redis proxy not supporting 'allow-key-locking' in lua scripts
-    // ratelimit = new Ratelimit({ ... })
-  }
-} catch (e) {
-  console.error("Failed to initialize Upstash Redis ratelimiter:", e);
-}
+import { checkRateLimit, createRateLimitResponse, getClientIp } from "@/server/rate-limit";
 
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
@@ -24,28 +12,27 @@ export async function middleware(request: NextRequest) {
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 
-  // Distributed Redis Rate Limiting for Login
-  if (request.nextUrl.pathname.startsWith("/api/auth/callback/credentials") && request.method === "POST") {
-    const ip = request.headers.get("x-forwarded-for") || "unknown";
-    
-    if (ratelimit) {
-      const { success, limit, reset, remaining } = await ratelimit.limit(`login_${ip}`);
-      
-      if (!success) {
-        return new NextResponse("Too Many Requests", {
-          status: 429,
-          headers: {
-            "X-RateLimit-Limit": limit.toString(),
-            "X-RateLimit-Remaining": remaining.toString(),
-            "X-RateLimit-Reset": reset.toString(),
-          },
-        });
-      }
+  const { pathname } = request.nextUrl;
+
+  // Rate Limiting for Credentials Login
+  if (pathname.startsWith("/api/auth/callback/credentials") && request.method === "POST") {
+    const ip = getClientIp(request);
+    const result = await checkRateLimit("AUTH_LOGIN", `login_${ip}`);
+    if (!result.success) {
+      return createRateLimitResponse(result);
+    }
+  }
+
+  // Rate Limiting for Registration
+  if (pathname.startsWith("/api/auth/register") && request.method === "POST") {
+    const ip = getClientIp(request);
+    const result = await checkRateLimit("AUTH_REGISTER", `register_${ip}`);
+    if (!result.success) {
+      return createRateLimitResponse(result);
     }
   }
 
   // Global API Route Firewall
-  const { pathname } = request.nextUrl;
   if (pathname.startsWith("/api/") && !pathname.startsWith("/api/auth/")) {
     const hasSession = request.cookies.has("authjs.session-token") || request.cookies.has("__Secure-authjs.session-token");
     if (!hasSession) {

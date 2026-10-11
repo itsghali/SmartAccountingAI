@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/server/prisma";
+import { checkRateLimit, createRateLimitResponse, getClientIp } from "@/server/rate-limit";
 
 const registerSchema = z.object({
   firstName: z.string().min(2),
@@ -12,6 +13,12 @@ const registerSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request);
+  const rateLimitResult = await checkRateLimit("AUTH_REGISTER", `register_${ip}`);
+  if (!rateLimitResult.success) {
+    return createRateLimitResponse(rateLimitResult);
+  }
+
   try {
     const body = await request.json();
     const parsed = registerSchema.safeParse(body);

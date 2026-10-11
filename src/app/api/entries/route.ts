@@ -6,6 +6,7 @@ import { prisma } from "@/server/prisma";
 import { createEntrySchema } from "@/server/validators/entry";
 import Decimal from "decimal.js";
 import { syncVATDeclarationForDate } from "@/server/calculations/vatSync";
+import { checkRateLimit, createRateLimitResponse } from "@/server/rate-limit";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -64,6 +65,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+
+  const rateLimitResult = await checkRateLimit("FINANCIAL_MUTATION", `entries_${session.user.id}`);
+  if (!rateLimitResult.success) {
+    return createRateLimitResponse(rateLimitResult);
+  }
 
   const body = await request.json();
   const parsed = createEntrySchema.safeParse(body);

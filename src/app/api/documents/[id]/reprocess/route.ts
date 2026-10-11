@@ -8,6 +8,7 @@ import {
   supersedeDocumentSuggestions,
 } from "@/server/suggestions/service";
 import { modelGateway } from "@/server/agents/core/model-gateway";
+import { checkRateLimit, createRateLimitResponse } from "@/server/rate-limit";
 
 export async function POST(
   request: NextRequest,
@@ -19,6 +20,11 @@ export async function POST(
   }
 
   const user = session.user as { id: string; organizationId: string };
+  const rateLimitResult = await checkRateLimit("AI_OR_OCR", `reprocess_${user.id}`);
+  if (!rateLimitResult.success) {
+    return createRateLimitResponse(rateLimitResult);
+  }
+
   const { id: documentId } = await params;
 
   try {

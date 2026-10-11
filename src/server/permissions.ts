@@ -1,5 +1,6 @@
 import { auth } from "@/server/auth";
 import { prisma } from "@/server/prisma";
+import { isSessionRevoked } from "@/server/session-revocation";
 
 export type CompanyPermissionKey =
   | "canAccessSetup"
@@ -66,6 +67,16 @@ export async function assertCompanyAccess(
   }
 
   try {
+    if (session.user.jti) {
+      const revoked = await isSessionRevoked({
+        jti: session.user.jti,
+        userId: session.user.id,
+      });
+      if (revoked) {
+        return { authorized: false, status: 401, error: "Session révoquée" };
+      }
+    }
+
     const [user, company] = await Promise.all([
       prisma.user.findUnique({
         where: { id: session.user.id },

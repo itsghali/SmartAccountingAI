@@ -13,7 +13,18 @@ declare module "next-auth" {
       name: string;
       role: UserRole;
       organizationId: string;
+      jti?: string;
     };
+  }
+}
+
+declare module "@auth/core/jwt" {
+  interface JWT {
+    id?: string;
+    role?: UserRole;
+    organizationId?: string;
+    jti?: string;
+    iat?: number;
   }
 }
 

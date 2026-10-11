@@ -3,6 +3,7 @@ import { auth } from "@/server/auth";
 import { prisma } from "@/server/prisma";
 import { storeFile, validateFile } from "@/server/storage";
 import { checkPermission } from "@/server/permissions";
+import { checkRateLimit, createRateLimitResponse } from "@/server/rate-limit";
 
 export async function POST(request: NextRequest) {
   console.log("[Upload] Starting upload request");
@@ -16,6 +17,11 @@ export async function POST(request: NextRequest) {
 
   const user = session.user as { id: string; organizationId: string };
   console.log("[Upload] User:", user.id, "Org:", user.organizationId);
+
+  const rateLimitResult = await checkRateLimit("AI_OR_OCR", `upload_${user.id}`);
+  if (!rateLimitResult.success) {
+    return createRateLimitResponse(rateLimitResult);
+  }
 
   try {
     const formData = await request.formData();

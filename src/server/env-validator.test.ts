@@ -85,10 +85,19 @@ describe("Production Environment Validator", () => {
     expect(validateEnvValues(envInvalid).valid).toBe(false);
   });
 
-  it("fails closed when Redis token is missing while Redis URL is configured", () => {
+  it("fails closed when UPSTASH_REDIS_REST_URL is missing in production", () => {
     const env = {
       ...validProductionEnv,
-      UPSTASH_REDIS_REST_URL: "http://redis-http-proxy:80",
+      UPSTASH_REDIS_REST_URL: undefined,
+    };
+    const result = validateEnvValues(env);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes("UPSTASH_REDIS_REST_URL"))).toBe(true);
+  });
+
+  it("fails closed when Redis token is missing in production", () => {
+    const env = {
+      ...validProductionEnv,
       UPSTASH_REDIS_REST_TOKEN: undefined,
       REDIS_HTTP_TOKEN: undefined,
     };

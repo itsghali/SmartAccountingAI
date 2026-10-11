@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/server/auth";
 import { prisma } from "@/server/prisma";
+import { revokeAllUserSessions } from "@/server/session-revocation";
 import { z } from "zod";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -100,6 +101,11 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         createdAt: true,
       },
     });
+
+    // Invalidate existing sessions immediately if user is deactivated or role changed
+    if (parsed.data.isActive === false || (parsed.data.role && parsed.data.role !== existing.role)) {
+      await revokeAllUserSessions(id);
+    }
 
     return NextResponse.json(user);
   } catch (error) {
