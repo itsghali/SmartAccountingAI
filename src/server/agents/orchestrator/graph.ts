@@ -833,34 +833,29 @@ async function runDocumentProcessorChunk(
   let lastRawOutput: string | undefined;
   let lastError: string | undefined;
 
-  // STEP 1: Run OCR via docTR microservice
+  // STEP 1: Get OCR text — reuse pre-extracted text from document-processor if available
   let ocrText = "";
-  try {
-    for (const base64Page of imageBase64Pages) {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
-      
-      const ocrUrl = process.env.OCR_SERVICE_URL || "http://localhost:8000/extract";
-      const response = await fetch(ocrUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image_base64: base64Page }),
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
-      
-      if (!response.ok) {
-        throw new Error(`docTR microservice failed: ${response.statusText}`);
+  const preExtractedOcrText =
+    typeof context.inputData?.ocrText === "string" ? context.inputData.ocrText : "";
+
+  if (preExtractedOcrText.trim().length > 0) {
+    ocrText = preExtractedOcrText;
+  } else {
+    // Fallback: call OCR service directly (only if document-processor didn't provide text)
+    try {
+      const { extractDocumentWithOCR } = await import("@/server/ocr-client");
+      for (const base64Page of imageBase64Pages) {
+        const pageBuffer = Buffer.from(base64Page, "base64");
+        const data = await extractDocumentWithOCR(pageBuffer, "page");
+        ocrText += (data.raw_text || "") + "\n\n";
       }
-      const data = await response.json();
-      ocrText += data.raw_text + "\n\n";
+    } catch (error) {
+      console.error("[docTR OCR] Failed to extract text:", error);
+      return {
+        error: `Failed to extract text using OCR service: ${error instanceof Error ? error.message : "Unknown error"}`,
+        iterations: 0,
+      };
     }
-  } catch (error) {
-    console.error("[docTR OCR] Failed to extract text:", error);
-    return {
-      error: `Failed to extract text using OCR service: ${error instanceof Error ? error.message : "Unknown error"}`,
-      iterations: 0,
-    };
   }
 
   // STEP 2: Structure the OCR Text via LLM
@@ -885,14 +880,32 @@ ${correctiveInstruction}
 You must respond with a valid JSON object matching this schema: ${JSON.stringify(jsonSchema)}`
     );
 
-    const userMessage = new HumanMessage({
-      content: `${context.userPrompt}
+    const contentBlocks: Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }> = [
+      {
+        type: "text",
+        text: `${context.userPrompt}
 
 These pages are only one chunk of the document. Return fields, line_items, and financial_tables for what is visible on these pages only.${options.strictFinancialTableRetry ? " This retry is specifically for recovering financial statement tables, so prioritize visible CPC, bilan, ESG, and tresorerie tables." : ""}
 
 --- OCR TEXT EXTRACTED BY DOCTR ---
 ${ocrText.trim()}
------------------------------------`,
+-----------------------------------`
+      }
+    ];
+
+    // Only append images if the model isn't explicitly a text-only model
+    const isTextOnly = modelConfig?.model?.includes("gpt-oss-120b");
+    if (!isTextOnly) {
+      for (const page of imageBase64Pages) {
+        contentBlocks.push({
+          type: "image_url",
+          image_url: { url: `data:${imageMime};base64,${page}` },
+        });
+      }
+    }
+
+    const userMessage = new HumanMessage({
+      content: contentBlocks,
     });
 
     const response = await model.invoke([systemMessage, userMessage]);
@@ -1144,7 +1157,7 @@ async function generateNode(
   const userMessage: BaseMessage = hasImages
     ? new HumanMessage({
         content: [
-          { type: "text", text: context.userPrompt },
+          { type: "text" as const, text: context.userPrompt },
           ...imageBase64Pages.map((page) => ({
             type: "image_url" as const,
             image_url: { url: `data:${imageMime};base64,${page}` },

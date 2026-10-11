@@ -113,6 +113,18 @@ export class ModelGateway {
       });
     }
 
+    if (config.provider === "ollama") {
+      return new ChatOpenAI({
+        modelName: config.model,
+        temperature: config.temperature,
+        maxTokens: config.maxTokens,
+        apiKey: "ollama", // API key is not required for local Ollama but ChatOpenAI needs a string
+        configuration: {
+          baseURL: process.env.OLLAMA_BASE_URL || "http://localhost:11434/v1",
+        },
+      });
+    }
+
     throw new Error(`Unsupported provider: ${config.provider}`);
   }
 

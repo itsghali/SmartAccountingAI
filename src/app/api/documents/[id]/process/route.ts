@@ -4,6 +4,7 @@ import { prisma } from "@/server/prisma";
 import { checkPermission } from "@/server/permissions";
 import { processDocument } from "@/server/document-processor";
 
+import { modelGateway } from "@/server/agents/core/model-gateway";
 export { processDocument };
 
 export async function POST(
@@ -43,16 +44,29 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (document.status !== "UPLOADED" && document.status !== "FAILED") {
+    if (document.status !== "UPLOADED" && document.status !== "FAILED" && document.status !== "PROCESSING") {
       return NextResponse.json(
         { error: `Document cannot be processed in status: ${document.status}` },
         { status: 400 }
       );
     }
 
+    // If document was stuck in PROCESSING, cancel any previous unfinished run
+    if (document.currentRunId) {
+      await prisma.documentExtractionRun.updateMany({
+        where: { id: document.currentRunId, status: { in: ["QUEUED", "RUNNING"] } },
+        data: {
+          status: "FAILED",
+          errorMessage: "Superseded by retry",
+          completedAt: new Date(),
+        },
+      }).catch(() => {});
+    }
+
+    const defaultConfig = modelGateway.getDefaultConfig();
     const modelConfig = {
-      provider: "groq" as const,
-      model: "llama-3.3-70b",
+      provider: (process.env.DOCUMENT_PROCESSOR_PROVIDER || defaultConfig.provider) as "groq" | "openai" | "openrouter" | "ollama",
+      model: process.env.DOCUMENT_PROCESSOR_MODEL || defaultConfig.model,
       temperature: 0,
       maxTokens: 8000,
     };

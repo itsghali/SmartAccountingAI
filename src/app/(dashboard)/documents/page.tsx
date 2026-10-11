@@ -15,6 +15,7 @@ import {
   ChevronRight,
   FileImage,
   Building2,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -152,6 +153,23 @@ export default function DocumentsPage() {
       refetch();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Reprocessing failed");
+    }
+  }
+
+  async function handleDelete(documentId: string, filename: string) {
+    if (!confirm(`Delete "${filename}"? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/api/documents/${documentId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Delete failed");
+      }
+      toast.success("Document deleted");
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Delete failed");
     }
   }
 
@@ -313,6 +331,29 @@ export default function DocumentsPage() {
                       onClick={() => handleProcess(doc.id)}
                     >
                       Process
+                    </Button>
+                  )}
+                  {doc.status === "PROCESSING" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 text-xs"
+                      onClick={() => handleReprocess(doc.id)}
+                      title="Retry processing if stuck"
+                    >
+                      <RefreshCw className="mr-1 size-3" />
+                      Retry
+                    </Button>
+                  )}
+                  {(doc.status === "FAILED" || doc.status === "UPLOADED" || doc.status === "PROCESSING") && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => handleDelete(doc.id, doc.originalFilename)}
+                      title="Delete document"
+                    >
+                      <Trash2 className="size-4" />
                     </Button>
                   )}
                   {doc.status === "REVIEW_REQUIRED" && (

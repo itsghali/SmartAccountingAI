@@ -12,6 +12,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # We need to generate prisma client
 RUN npx prisma generate
+ENV OCR_SERVICE_URL=http://ocr-service:8000/extract
 RUN npm run build
 
 # Stage 3: Runner
@@ -31,6 +32,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
+
+# Create the uploads directory and give the nextjs user permission
+RUN mkdir -p /app/private_uploads && chown nextjs:nodejs /app/private_uploads
 
 USER nextjs
 

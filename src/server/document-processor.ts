@@ -9,7 +9,7 @@ import {
 import { extractDocumentWithOCR } from "@/server/ocr-client";
 
 interface ModelConfig {
-  provider: "openrouter" | "groq" | "openai";
+  provider: "openrouter" | "groq" | "openai" | "ollama";
   model: string;
   temperature: number;
   maxTokens: number;
@@ -140,6 +140,16 @@ async function persistLegacyDocumentFields(
   }
 }
 
+const DOCUMENT_PROCESSING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes max
+
+function withTimeout<T>(promise: Promise<T>, ms: number, errorMessage: string): Promise<T> {
+  let timer: NodeJS.Timeout;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(errorMessage)), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
+}
+
 export async function processDocument(
   documentId: string,
   runId: string,
@@ -154,119 +164,133 @@ export async function processDocument(
       data: { status: "RUNNING", startedAt: new Date() },
     });
 
-    const doc = await prisma.document.findUnique({
-      where: { id: documentId },
-      select: { storagePath: true },
-    });
-    if (!doc) {
-      throw new Error(`Document ${documentId} not found`);
-    }
-
-    const fileBytes = await readPrivateFile(doc.storagePath);
-    
-    // Call the new FastAPI OCR worker
-    const ocrResult = await extractDocumentWithOCR(fileBytes, "document");
-
-    let extractedText = "";
-    if (ocrResult && ocrResult.pages) {
-      for (const page of ocrResult.pages) {
-        if (!page.blocks) continue;
-        for (const block of page.blocks) {
-          if (!block.lines) continue;
-          for (const line of block.lines) {
-            if (!line.words) continue;
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            extractedText += line.words.map((w: any) => w.value).join(" ") + "\n";
-          }
-          extractedText += "\n";
+    await withTimeout(
+      (async () => {
+        const doc = await prisma.document.findUnique({
+          where: { id: documentId },
+          select: { storagePath: true },
+        });
+        if (!doc) {
+          throw new Error(`Document ${documentId} not found`);
         }
-      }
-    }
 
-    const result = await agentRunner.run(tenantId, userId, {
-      agentType: "DOCUMENT_PROCESSOR",
-      userPrompt:
-        "Look at this extracted OCR text and intelligently extract everything. First, identify what type of document it is (invoice, receipt, bank statement, payslip, utility bill, liasse fiscale, état de synthèse, etc.). Then extract every visible field you can read, using descriptive snake_case keys that match what the document actually contains. For each field, return { value, confidence }. If the document contains a table (line items, transactions, etc.), extract every row into line_items. If the document is a liasse fiscale or état de synthèse, you MUST extract all financial tables into the financial_tables array with every row, label, and amount. For financial statements, the numeric table cells are the primary target: do not return empty template rows when values are visible, and never replace unreadable numbers with 0 unless the source actually shows 0. Do not force invoice-specific fields onto non-invoice documents — adapt to what you actually see.",
-      inputData: {
-        documentId,
-        mimeType,
-        ocrText: extractedText,
-      },
-      modelConfig,
-    });
+        const fileBytes = await readPrivateFile(doc.storagePath);
+        
+        // Call the new FastAPI OCR worker
+        const ocrResult = await extractDocumentWithOCR(fileBytes, "document");
 
-    if (!result.success || !result.output) {
-      await prisma.documentExtractionRun.update({
-        where: { id: runId },
-        data: {
-          status: "FAILED",
-          errorMessage: result.error || "Extraction failed",
-          completedAt: new Date(),
-        },
-      });
+        let extractedText = "";
+        if (ocrResult) {
+          if (typeof ocrResult.raw_text === "string") {
+            // FastAPI OCR service returns { raw_text, pages }
+            extractedText = ocrResult.raw_text;
+          } else if (ocrResult.pages && Array.isArray(ocrResult.pages)) {
+            // Legacy nested format: pages[].blocks[].lines[].words[]
+            for (const page of ocrResult.pages) {
+              if (!page.blocks) continue;
+              for (const block of page.blocks) {
+                if (!block.lines) continue;
+                for (const line of block.lines) {
+                  if (!line.words) continue;
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  extractedText += line.words.map((w: any) => w.value).join(" ") + "\n";
+                }
+                extractedText += "\n";
+              }
+            }
+          }
+        }
 
-      await prisma.document.update({
-        where: { id: documentId },
-        data: { status: "FAILED" },
-      });
+        const result = await agentRunner.run(tenantId, userId, {
+          agentType: "DOCUMENT_PROCESSOR",
+          userPrompt:
+            "Look at this extracted OCR text and intelligently extract everything. First, identify what type of document it is (invoice, receipt, bank statement, payslip, utility bill, liasse fiscale, état de synthèse, etc.). Then extract every visible field you can read, using descriptive snake_case keys that match what the document actually contains. For each field, return { value, confidence }. If the document contains a table (line items, transactions, etc.), extract every row into line_items. If the document is a liasse fiscale or état de synthèse, you MUST extract all financial tables into the financial_tables array with every row, label, and amount. For financial statements, the numeric table cells are the primary target: do not return empty template rows when values are visible, and never replace unreadable numbers with 0 unless the source actually shows 0. Do not force invoice-specific fields onto non-invoice documents — adapt to what you actually see.",
+          inputData: {
+            documentId,
+            mimeType,
+            ocrText: extractedText,
+            imageBase64: fileBytes.toString("base64"),
+            imageMimeType: mimeType,
+          },
+          modelConfig,
+        });
 
-      return;
-    }
+        if (!result.success || !result.output) {
+          await prisma.documentExtractionRun.update({
+            where: { id: runId },
+            data: {
+              status: "FAILED",
+              errorMessage: result.error || "Extraction failed",
+              completedAt: new Date(),
+            },
+          });
 
-    const output = result.output as Record<string, unknown>;
-    const warnings = output.warnings as string[] | undefined;
+          await prisma.document.update({
+            where: { id: documentId },
+            data: { status: "FAILED" },
+          });
 
-    await prisma.documentExtractionRun.update({
-      where: { id: runId },
-      data: {
-        status: "COMPLETED",
-        rawOutputJson: output as Prisma.InputJsonValue,
-        completedAt: new Date(),
-      },
-    });
+          return;
+        }
 
-    try {
-      await persistDocumentSuggestions({
-        companyId: tenantId,
-        documentId,
-        extractionRunId: runId,
-        agentRunId: result.runId,
-        output,
-      });
-    } catch (error) {
-      if (!isSuggestionStorageUnavailableError(error)) {
-        throw error;
-      }
+        const output = result.output as Record<string, unknown>;
+        const warnings = output.warnings as string[] | undefined;
 
-      console.warn(
-        "[DocumentProcessor] Suggestion storage unavailable, falling back to legacy extracted fields only."
-      );
-      await persistLegacyDocumentFields(documentId, runId, output);
-    }
+        await prisma.documentExtractionRun.update({
+          where: { id: runId },
+          data: {
+            status: "COMPLETED",
+            rawOutputJson: output as Prisma.InputJsonValue,
+            completedAt: new Date(),
+          },
+        });
 
-    await prisma.document.update({
-      where: { id: documentId },
-      data: {
-        status: "REVIEW_REQUIRED",
-        documentType:
-          typeof output.document_type === "string" ? output.document_type : null,
-      },
-    });
+        try {
+          await persistDocumentSuggestions({
+            companyId: tenantId,
+            documentId,
+            extractionRunId: runId,
+            agentRunId: result.runId,
+            output,
+          });
+        } catch (error) {
+          if (!isSuggestionStorageUnavailableError(error)) {
+            throw error;
+          }
 
-    await prisma.auditLog.create({
-      data: {
-        userId,
-        companyId: tenantId,
-        action: "DOCUMENT_PROCESSED",
-        entityType: "Document",
-        entityId: documentId,
-        details: {
-          runId,
-          documentConfidence: output.document_confidence as number | null | undefined,
-          warningCount: warnings?.length ?? 0,
-        },
-      },
-    });
+          console.warn(
+            "[DocumentProcessor] Suggestion storage unavailable, falling back to legacy extracted fields only."
+          );
+          await persistLegacyDocumentFields(documentId, runId, output);
+        }
+
+        await prisma.document.update({
+          where: { id: documentId },
+          data: {
+            status: "REVIEW_REQUIRED",
+            documentType:
+              typeof output.document_type === "string" ? output.document_type : null,
+          },
+        });
+
+        await prisma.auditLog.create({
+          data: {
+            userId,
+            companyId: tenantId,
+            action: "DOCUMENT_PROCESSED",
+            entityType: "Document",
+            entityId: documentId,
+            details: {
+              runId,
+              documentConfidence: output.document_confidence as number | null | undefined,
+              warningCount: warnings?.length ?? 0,
+            },
+          },
+        });
+      })(),
+      DOCUMENT_PROCESSING_TIMEOUT_MS,
+      "Document processing timed out after 5 minutes"
+    );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
 

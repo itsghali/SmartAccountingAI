@@ -59,7 +59,7 @@ export interface AgentContext {
 }
 
 export interface ModelConfig {
-  provider: "openai" | "groq" | "openrouter";
+  provider: "openai" | "groq" | "openrouter" | "ollama";
   model: string;
   temperature: number;
   maxTokens?: number;

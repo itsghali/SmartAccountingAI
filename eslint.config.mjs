@@ -20,6 +20,7 @@ const eslintConfig = defineConfig([
       "doctr/**",
       "ocr_worker/**",
       "scratch/**",
+      "coverage/**",
       "check2.js",
       "fixVat.js",
     ],

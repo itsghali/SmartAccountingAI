@@ -6,6 +6,7 @@ import {
   isSuggestionStorageUnavailableError,
   supersedeDocumentSuggestions,
 } from "@/server/suggestions/service";
+import { modelGateway } from "@/server/agents/core/model-gateway";
 
 export async function POST(
   request: NextRequest,
@@ -40,9 +41,10 @@ export async function POST(
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
+    const defaultConfig = modelGateway.getDefaultConfig();
     const modelConfig = {
-      provider: "groq" as const,
-      model: "llama-3.3-70b",
+      provider: (process.env.DOCUMENT_PROCESSOR_PROVIDER || defaultConfig.provider) as "groq" | "openai" | "openrouter" | "ollama",
+      model: process.env.DOCUMENT_PROCESSOR_MODEL || defaultConfig.model,
       temperature: 0,
       maxTokens: 8000,
     };
@@ -61,6 +63,17 @@ export async function POST(
       console.warn(
         "[ReprocessDocument] Suggestion storage unavailable, skipping suggestion supersede."
       );
+    }
+
+    if (document.currentRunId) {
+      await prisma.documentExtractionRun.updateMany({
+        where: { id: document.currentRunId, status: { in: ["QUEUED", "RUNNING"] } },
+        data: {
+          status: "FAILED",
+          errorMessage: "Superseded by reprocessing",
+          completedAt: new Date(),
+        },
+      }).catch(() => {});
     }
 
     const extractionRun = await prisma.documentExtractionRun.create({

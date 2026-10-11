@@ -4,6 +4,7 @@ import { auth } from "@/server/auth";
 import { prisma } from "@/server/prisma";
 import { checkPermission } from "@/server/permissions";
 import logger from "@/server/logger";
+import { recoverStaleProcessingDocuments } from "@/server/document-cleanup";
 
 export async function GET(request: NextRequest) {
   logger.info({ action: "DocumentsList_GET_start" });
@@ -46,6 +47,9 @@ export async function GET(request: NextRequest) {
     if (!(await checkPermission(tenantId, "canAccessEntries"))) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    // Auto-recover any documents stuck in PROCESSING for > 5 minutes
+    await recoverStaleProcessingDocuments(tenantId);
 
     const where: Prisma.DocumentWhereInput = {
       tenantId,

@@ -4,14 +4,25 @@ param(
     [string]$FilePath
 )
 
-$previousGroqKey = $env:GROQ_API_KEY
-$previousOpenRouterKey = $env:OPENROUTER_API_KEY
-$previousOpenAiKey = $env:OPENAI_API_KEY
+$sensitiveVariables = @(
+    "GROQ_API_KEY",
+    "OPENROUTER_API_KEY",
+    "OPENAI_API_KEY",
+    "POSTGRES_DB",
+    "POSTGRES_USER",
+    "POSTGRES_PASSWORD",
+    "DATABASE_URL",
+    "NEXTAUTH_URL",
+    "AUTH_SECRET",
+    "REDIS_HTTP_TOKEN"
+)
+$previousValues = @{}
 
 try {
-    $env:GROQ_API_KEY = "[REDACTED]"
-    $env:OPENROUTER_API_KEY = "[REDACTED]"
-    $env:OPENAI_API_KEY = "[REDACTED]"
+    foreach ($variableName in $sensitiveVariables) {
+        $previousValues[$variableName] = [Environment]::GetEnvironmentVariable($variableName, "Process")
+        Set-Item -Path "Env:$variableName" -Value "[REDACTED]"
+    }
 
     & docker compose -f $FilePath config
     if ($LASTEXITCODE -ne 0) {
@@ -19,24 +30,12 @@ try {
     }
 }
 finally {
-    if ($null -ne $previousGroqKey) {
-        $env:GROQ_API_KEY = $previousGroqKey
-    }
-    else {
-        Remove-Item Env:GROQ_API_KEY -ErrorAction SilentlyContinue
-    }
-
-    if ($null -ne $previousOpenRouterKey) {
-        $env:OPENROUTER_API_KEY = $previousOpenRouterKey
-    }
-    else {
-        Remove-Item Env:OPENROUTER_API_KEY -ErrorAction SilentlyContinue
-    }
-
-    if ($null -ne $previousOpenAiKey) {
-        $env:OPENAI_API_KEY = $previousOpenAiKey
-    }
-    else {
-        Remove-Item Env:OPENAI_API_KEY -ErrorAction SilentlyContinue
+    foreach ($variableName in $sensitiveVariables) {
+        if ($null -ne $previousValues[$variableName]) {
+            Set-Item -Path "Env:$variableName" -Value $previousValues[$variableName]
+        }
+        else {
+            Remove-Item -Path "Env:$variableName" -ErrorAction SilentlyContinue
+        }
     }
 }

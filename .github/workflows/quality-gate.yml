@@ -39,6 +39,11 @@ jobs:
       - name: Build
         run: npm run build:ci
 
+      - name: Validate Docker Compose
+        run: |
+          npm run compose:validate
+          npm run compose:validate:prod
+
       - name: Dependency audit
         run: npm run audit:dependencies
         continue-on-error: true

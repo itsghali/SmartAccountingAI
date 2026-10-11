@@ -69,15 +69,15 @@ export default function VATDeclarationsPage() {
       if (res.ok) {
         const data = await res.json();
         setDeclarations(data);
-        if (selectedDeclaration) {
-          const updated = data.find((d: VATDeclaration) => d.id === selectedDeclaration.id);
-          if (updated) setSelectedDeclaration(updated);
-        }
+        setSelectedDeclaration((prev) => {
+          if (!prev) return null;
+          return data.find((d: VATDeclaration) => d.id === prev.id) || prev;
+        });
       }
     } catch {
       // ignore
     }
-  }, [currentCompanyId, currentFiscalYearId, selectedDeclaration]);
+  }, [currentCompanyId, currentFiscalYearId]);
 
   useEffect(() => {
     loadDeclarations();

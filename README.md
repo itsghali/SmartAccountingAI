@@ -64,7 +64,7 @@ Required variables:
 
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5433/smartaccountingai"
-NEXTAUTH_SECRET="your-secret-key-min-32-chars"
+AUTH_SECRET="your-secret-key-min-32-chars"
 NEXTAUTH_URL="http://localhost:3000"
 ```
 
@@ -117,6 +117,10 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to see the application.
+
+## Production configuration
+
+Copy `production.env.example` to a secret store or an untracked production environment file. Production Compose fails closed when required values are absent. Do not expose PostgreSQL or OCR ports; access them only through the internal Docker network. Rotate any credentials that previously used repository defaults before deploying.
 
 ### Default Credentials (Development)
 

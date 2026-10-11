@@ -52,6 +52,7 @@ prisma/migrations/
 
 # Spec / planning docs
 atlascompta-spec-v2.md
+AI-CHANGELOG.md
 
 # Large media files
 *.mp4
