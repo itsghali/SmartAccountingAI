@@ -44,13 +44,19 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Fetch all journal entry lines for this fiscal year (non-reversed)
+  const includeDrafts = params.get("includeDrafts") === "true";
+  const includePriorYear = params.get("includePriorYear") === "true";
+
+  // Fetch all journal entry lines for this fiscal year
   const lines = await prisma.journalEntryLine.findMany({
     where: {
       companyId,
       journalEntry: {
         fiscalYearId,
-        status: { in: ["DRAFT", "VALIDATED"] },
+        status: includeDrafts
+          ? { in: ["DRAFT", "VALIDATED", "REVERSED"] }
+          : { in: ["VALIDATED", "REVERSED"] },
+        ...(!includePriorYear ? { NOT: { sourceModule: "PRIOR_YEAR_COPY" } } : {}),
       },
     },
     select: {
@@ -74,8 +80,8 @@ export async function GET(request: NextRequest) {
 
   // Compute KPIs
   let treasury = new Decimal(0); // Class 5: debit - credit
-  let revenue = new Decimal(0); // Class 71: credits
-  let expenses = new Decimal(0); // Class 6: debits
+  let revenue = new Decimal(0); // Class 71: credit - debit
+  let expenses = new Decimal(0); // Class 6: debit - credit
   let receivables = new Decimal(0); // Account 3421: debit - credit
   let payables = new Decimal(0); // Account 4411: credit - debit
 
@@ -99,14 +105,14 @@ export async function GET(request: NextRequest) {
       treasury = treasury.plus(debit).minus(credit);
     }
 
-    // Revenue: class 71 credits
+    // Revenue: class 71 credits minus debits
     if (code.startsWith("71")) {
-      revenue = revenue.plus(credit);
+      revenue = revenue.plus(credit).minus(debit);
     }
 
-    // Expenses: class 6 debits
+    // Expenses: class 6 debits minus credits
     if (classNum === 6) {
-      expenses = expenses.plus(debit);
+      expenses = expenses.plus(debit).minus(credit);
 
       // Expense breakdown by 2-digit prefix
       const prefix = code.substring(0, 2);
@@ -125,7 +131,7 @@ export async function GET(request: NextRequest) {
         };
         expenseBreakdown.set(prefix, entry);
       }
-      entry.amount = entry.amount.plus(debit);
+      entry.amount = entry.amount.plus(debit).minus(credit);
     }
 
     // Receivables: account 3421 (debit balance)
@@ -148,10 +154,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (code.startsWith("71")) {
-      monthEntry.revenue = monthEntry.revenue.plus(credit);
+      monthEntry.revenue = monthEntry.revenue.plus(credit).minus(debit);
     }
     if (classNum === 6) {
-      monthEntry.expenses = monthEntry.expenses.plus(debit);
+      monthEntry.expenses = monthEntry.expenses.plus(debit).minus(credit);
     }
   }
 

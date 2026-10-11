@@ -3,6 +3,11 @@ import { auth } from "@/server/auth";
 import { checkPermission } from "@/server/permissions";
 import { prisma } from "@/server/prisma";
 import { updateFiscalYearSchema } from "@/server/validators/fiscal-year";
+import {
+  runAccountingTransaction,
+  lockFiscalYear,
+  recordAuditLog,
+} from "@/server/accounting-transaction";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -84,17 +89,27 @@ export async function PUT(
 
     const { fiscalYear: existing } = result;
 
-    // Prevent updates to a CLOSED fiscal year (except reopening by setting status)
-    if (existing.status === "CLOSED") {
-      const body = await request.json();
-      const parsed = updateFiscalYearSchema.safeParse(body);
-      if (!parsed.success) {
+    const body = await request.json();
+    const parsed = updateFiscalYearSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    // Changing status to or from CLOSED or PROVISIONAL_CLOSE strictly requires canCloseExercise
+    if (parsed.data.status !== undefined && parsed.data.status !== existing.status) {
+      if (!(await checkPermission(existing.companyId, "canCloseExercise"))) {
         return NextResponse.json(
-          { error: "Validation failed", details: parsed.error.flatten() },
-          { status: 400 }
+          { error: "Droits insuffisants (canCloseExercise requis pour modifier le statut de l'exercice)" },
+          { status: 403 }
         );
       }
+    }
 
+    // Prevent updates to a CLOSED fiscal year (except reopening by setting status)
+    if (existing.status === "CLOSED") {
       // Only allow changing the status on a closed year
       const allowedKeys = Object.keys(parsed.data).filter(
         (k) => parsed.data[k as keyof typeof parsed.data] !== undefined
@@ -106,21 +121,28 @@ export async function PUT(
         );
       }
 
-      const updated = await prisma.fiscalYear.update({
-        where: { id },
-        data: { status: parsed.data.status },
+      const updated = await runAccountingTransaction(async (tx) => {
+        // Lock FiscalYear exclusively
+        await lockFiscalYear(tx, id, existing.companyId, "UPDATE");
+
+        const res = await tx.fiscalYear.update({
+          where: { id },
+          data: { status: parsed.data.status },
+        });
+
+        await recordAuditLog(tx, {
+          userId: session.user.id,
+          companyId: existing.companyId,
+          action: "FISCAL_YEAR_STATUS_CHANGED",
+          entityType: "FiscalYear",
+          entityId: id,
+          details: { previousStatus: existing.status, newStatus: parsed.data.status },
+        });
+
+        return res;
       });
+
       return NextResponse.json(updated);
-    }
-
-    const body = await request.json();
-    const parsed = updateFiscalYearSchema.safeParse(body);
-
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validation failed", details: parsed.error.flatten() },
-        { status: 400 }
-      );
     }
 
     const { startDate, endDate, status, isDefault, label } = parsed.data;
@@ -138,6 +160,7 @@ export async function PUT(
 
     const diffMs = newEnd.getTime() - newStart.getTime();
     const diffMonths = diffMs / (1000 * 60 * 60 * 24 * 30.44);
+
     if (diffMonths > 24) {
       return NextResponse.json(
         { error: "Fiscal year cannot exceed 24 months" },
@@ -174,7 +197,12 @@ export async function PUT(
       );
     }
 
-    const fiscalYear = await prisma.$transaction(async (tx) => {
+    const fiscalYear = await runAccountingTransaction(async (tx) => {
+      // Lock FiscalYear exclusively if status is changing
+      if (status !== undefined) {
+        await lockFiscalYear(tx, id, existing.companyId, "UPDATE");
+      }
+
       // If setting as default, unset others
       if (isDefault) {
         await tx.fiscalYear.updateMany({
@@ -183,7 +211,7 @@ export async function PUT(
         });
       }
 
-      return tx.fiscalYear.update({
+      const res = await tx.fiscalYear.update({
         where: { id },
         data: {
           ...(label !== undefined && { label }),
@@ -198,6 +226,19 @@ export async function PUT(
           },
         },
       });
+
+      if (status !== undefined && status !== existing.status) {
+        await recordAuditLog(tx, {
+          userId: session.user.id,
+          companyId: existing.companyId,
+          action: "FISCAL_YEAR_STATUS_CHANGED",
+          entityType: "FiscalYear",
+          entityId: id,
+          details: { previousStatus: existing.status, newStatus: status },
+        });
+      }
+
+      return res;
     });
 
     return NextResponse.json(fiscalYear);

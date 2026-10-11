@@ -7,6 +7,22 @@ import { createEntrySchema } from "@/server/validators/entry";
 import Decimal from "decimal.js";
 import { syncVATDeclarationForDate } from "@/server/calculations/vatSync";
 import { checkRateLimit, createRateLimitResponse } from "@/server/rate-limit";
+import {
+  runAccountingTransaction,
+  lockFiscalYear,
+  lockJournal,
+  allocateNextEntryNumber,
+  assertFiscalPeriodAllowsMutation,
+  recordAuditLog,
+  AccountingError,
+} from "@/server/accounting-transaction";
+import {
+  getIdempotencyKey,
+  computeRequestFingerprint,
+  checkIdempotency,
+  recordIdempotency,
+  createIdempotentReplayResponse,
+} from "@/server/idempotency";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -106,16 +122,15 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Get fiscal year and validate date
+  // Authoritative existence & company boundary checks
   const fiscalYear = await prisma.fiscalYear.findUnique({
     where: { id: data.fiscalYearId },
   });
   if (!fiscalYear) {
     return NextResponse.json({ error: "Exercice comptable introuvable" }, { status: 404 });
   }
-  if (fiscalYear.status !== "OPEN") {
-    return NextResponse.json({ error: "L'exercice comptable est clôturé" }, { status: 400 });
-  }
+
+  assertFiscalPeriodAllowsMutation(fiscalYear, "CREATE");
 
   const entryDate = new Date(data.entryDate);
   if (entryDate < fiscalYear.startDate || entryDate > fiscalYear.endDate) {
@@ -125,7 +140,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Get the journal and next entry number
   const journal = await prisma.journal.findUnique({
     where: { id: data.journalId },
   });
@@ -141,54 +155,141 @@ export async function POST(request: NextRequest) {
   }
 
   const companyId = journal.companyId;
-  if (!(await checkPermission(companyId, "canAccessEntries"))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!(await checkPermission(companyId, "canAccessEntries"))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
+  // Idempotency pre-transaction check
+  const idempotencyKey = getIdempotencyKey(request);
+  let requestHash = "";
+  if (idempotencyKey) {
+    requestHash = computeRequestFingerprint("POST", "/api/entries", body);
+    const idempotencyCheck = await checkIdempotency({
+      companyId,
+      key: idempotencyKey,
+      requestHash,
+    });
+    if (idempotencyCheck.unavailableError) {
+      return NextResponse.json({ error: idempotencyCheck.unavailableError }, { status: 503 });
+    }
+    if (idempotencyCheck.isReplay && idempotencyCheck.cachedResponse) {
+      return createIdempotentReplayResponse(idempotencyCheck.cachedResponse, idempotencyKey);
+    }
+    if (idempotencyCheck.conflictError) {
+      return NextResponse.json({ error: idempotencyCheck.conflictError }, { status: 409 });
+    }
+  }
 
-  // Get next entry number
-  const lastEntry = await prisma.journalEntry.findFirst({
-    where: { journalId: data.journalId, fiscalYearId: data.fiscalYearId },
-    orderBy: { entryNumber: "desc" },
-  });
-  const entryNumber = (lastEntry?.entryNumber || 0) + 1;
+  try {
+    const entry = await runAccountingTransaction(async (tx) => {
+      // Lock Order Step 1: FiscalYear FOR SHARE
+      const lockedFY = await lockFiscalYear(tx, data.fiscalYearId, companyId, "SHARE");
+      assertFiscalPeriodAllowsMutation(lockedFY, "CREATE");
 
-  // Create entry with lines
-  const entry = await prisma.journalEntry.create({
-    data: {
-      fiscalYearId: data.fiscalYearId,
-      journalId: data.journalId,
-      entryNumber,
-      entryDate,
-      reference: data.reference,
-      description: data.description,
-      piece: data.piece,
-      origin: data.origin,
-      sourceModule: data.sourceModule,
-      sourceId: data.sourceId,
-      totalDebit: totalDebit.toNumber(),
-      totalCredit: totalCredit.toNumber(),
-      createdById: session.user.id,
-      lines: {
-        create: data.lines.map((line) => ({
-          lineNumber: line.lineNumber,
-          accountCode: line.accountCode,
+      // Lock Order Step 2: Journal FOR UPDATE
+      await lockJournal(tx, data.journalId, companyId);
+
+      // Lock Order Step 3: Concurrency-Safe Entry Number Allocation
+      const entryNumber = await allocateNextEntryNumber(tx, data.journalId, data.fiscalYearId);
+
+      // Create entry with lines
+      const created = await tx.journalEntry.create({
+        data: {
+          fiscalYearId: data.fiscalYearId,
+          journalId: data.journalId,
+          entryNumber,
+          entryDate,
+          reference: data.reference,
+          description: data.description,
+          piece: data.piece,
+          origin: data.origin,
+          sourceModule: data.sourceModule,
+          sourceId: data.sourceId,
+          totalDebit: totalDebit.toNumber(),
+          totalCredit: totalCredit.toNumber(),
+          createdById: session.user.id,
+          lines: {
+            create: data.lines.map((line) => ({
+              lineNumber: line.lineNumber,
+              accountCode: line.accountCode,
+              companyId,
+              label: line.label,
+              debit: line.debit,
+              credit: line.credit,
+              tiersName: line.tiersName,
+              tiersReference: line.tiersReference,
+              dueDate: line.dueDate ? new Date(line.dueDate) : undefined,
+            })),
+          },
+        },
+        include: {
+          lines: { include: { account: true }, orderBy: { lineNumber: "asc" } },
+          journal: true,
+        },
+      });
+
+      // Audit Log
+      await recordAuditLog(tx, {
+        userId: session.user.id,
+        companyId,
+        action: "JOURNAL_ENTRY_CREATED",
+        entityType: "JournalEntry",
+        entityId: created.id,
+        details: {
+          entryNumber: created.entryNumber,
+          journalId: created.journalId,
+          fiscalYearId: created.fiscalYearId,
+          totalDebit: created.totalDebit,
+          totalCredit: created.totalCredit,
+          reference: created.reference,
+        },
+      });
+
+      // Record Idempotency atomically
+      if (idempotencyKey) {
+        await recordIdempotency({
+          tx,
           companyId,
-          label: line.label,
-          debit: line.debit,
-          credit: line.credit,
-          tiersName: line.tiersName,
-          tiersReference: line.tiersReference,
-          dueDate: line.dueDate ? new Date(line.dueDate) : undefined,
-        })),
-      },
-    },
-    include: {
-      lines: { include: { account: true }, orderBy: { lineNumber: "asc" } },
-      journal: true,
-    },
-  });
+          key: idempotencyKey,
+          userId: session.user.id,
+          endpoint: "/api/entries",
+          requestHash,
+          statusCode: 201,
+          responseBody: created,
+        });
+      }
 
-  // Background sync for VAT
-  syncVATDeclarationForDate(companyId, entry.fiscalYearId, entry.entryDate).catch(console.error);
+      return created;
+    });
 
-  return NextResponse.json(entry, { status: 201 });
+    // Fire-and-forget VAT sync strictly after transaction commits
+    syncVATDeclarationForDate(companyId, entry.fiscalYearId, entry.entryDate).catch((err) => {
+      console.error("[VATSync] Post-commit synchronization warning:", err);
+    });
+
+    const responseHeaders: Record<string, string> = {};
+    if (idempotencyKey) {
+      responseHeaders["X-Idempotency-Key"] = idempotencyKey;
+    }
+
+    return NextResponse.json(entry, { status: 201, headers: responseHeaders });
+  } catch (err: unknown) {
+    if (err instanceof AccountingError) {
+      return NextResponse.json({ error: err.message }, { status: err.statusCode });
+    }
+    if (
+      err &&
+      typeof err === "object" &&
+      "code" in err &&
+      (err as { code: string }).code === "P2002"
+    ) {
+      return NextResponse.json(
+        { error: "Conflit d'écriture comptable ou d'idempotence. Veuillez réessayer." },
+        { status: 409 }
+      );
+    }
+    console.error("Erreur création écriture:", err);
+    return NextResponse.json({ error: "Erreur interne du serveur" }, { status: 500 });
+  }
 }
+

@@ -37,6 +37,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const includeDrafts = params.get("includeDrafts") === "true";
+  const includePriorYear = params.get("includePriorYear") === "true";
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -48,7 +51,10 @@ export async function GET(request: NextRequest) {
       journalEntry: {
         fiscalYearId,
         journal: { companyId },
-        status: { in: ["DRAFT", "VALIDATED"] },
+        status: includeDrafts
+          ? { in: ["DRAFT", "VALIDATED", "REVERSED"] }
+          : { in: ["VALIDATED", "REVERSED"] },
+        ...(!includePriorYear ? { NOT: { sourceModule: "PRIOR_YEAR_COPY" } } : {}),
       },
       OR: [
         { accountCode: { startsWith: "342" } },

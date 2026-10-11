@@ -2,6 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/server/auth";
 import { prisma } from "@/server/prisma";
+import {
+  runAccountingTransaction,
+  lockFiscalYear,
+  lockJournalsInOrder,
+  allocateNextEntryNumber,
+  assertFiscalPeriodAllowsMutation,
+  recordAuditLog,
+  AccountingError,
+} from "@/server/accounting-transaction";
+import {
+  getIdempotencyKey,
+  computeRequestFingerprint,
+  checkIdempotency,
+  recordIdempotency,
+  createIdempotentReplayResponse,
+} from "@/server/idempotency";
 
 const schema = z.object({
   companyId: z.string().min(1),
@@ -50,6 +66,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Droits insuffisants" }, { status: 403 });
     }
 
+    // Idempotency pre-transaction check
+    const idempotencyKey = getIdempotencyKey(request);
+    let requestHash = "";
+    if (idempotencyKey) {
+      requestHash = computeRequestFingerprint("POST", "/api/entries/duplicate-prior-year", body);
+      const idempotencyCheck = await checkIdempotency({
+        companyId,
+        key: idempotencyKey,
+        requestHash,
+      });
+      if (idempotencyCheck.unavailableError) {
+        return NextResponse.json({ error: idempotencyCheck.unavailableError }, { status: 503 });
+      }
+      if (idempotencyCheck.isReplay && idempotencyCheck.cachedResponse) {
+        return createIdempotentReplayResponse(idempotencyCheck.cachedResponse, idempotencyKey);
+      }
+      if (idempotencyCheck.conflictError) {
+        return NextResponse.json({ error: idempotencyCheck.conflictError }, { status: 409 });
+      }
+    }
+
     // Charger l'exercice courant
     const currentFiscalYear = await prisma.fiscalYear.findUnique({
       where: { id: fiscalYearId },
@@ -58,14 +95,9 @@ export async function POST(request: NextRequest) {
     if (!currentFiscalYear || currentFiscalYear.companyId !== companyId) {
       return NextResponse.json({ error: "Exercice introuvable" }, { status: 404 });
     }
-    if (currentFiscalYear.status !== "OPEN" && currentFiscalYear.status !== "PROVISIONAL_CLOSE") {
-      return NextResponse.json(
-        { error: "L'exercice doit être ouvert ou en clôture provisoire" },
-        { status: 400 }
-      );
-    }
+    assertFiscalPeriodAllowsMutation(currentFiscalYear, "DUPLICATE");
 
-    // Trouver l'exercice N-1 (celui qui se termine juste avant le début de l'exercice courant)
+    // Trouver l'exercice N-1
     const priorFiscalYear = await prisma.fiscalYear.findFirst({
       where: {
         companyId,
@@ -81,109 +113,155 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Vérifier que la duplication N-1 n'a pas déjà été faite
-    const alreadyDuplicated = await prisma.journalEntry.count({
-      where: {
-        fiscalYearId,
-        sourceModule: "PRIOR_YEAR_COPY",
-      },
-    });
-    if (alreadyDuplicated > 0) {
-      return NextResponse.json(
-        {
-          error: `La duplication N-1 a déjà été effectuée (${alreadyDuplicated} écriture(s) existantes). Supprimez-les d'abord si vous souhaitez recommencer.`,
-        },
-        { status: 409 }
-      );
-    }
+    const result = await runAccountingTransaction(async (tx) => {
+      // Lock Order Step 1: Lock both source and target FiscalYears in sorted order FOR SHARE
+      let lockedTargetFY = null;
+      const sortedFyIds = [priorFiscalYear.id, fiscalYearId].sort();
+      for (const fyId of sortedFyIds) {
+        const locked = await lockFiscalYear(tx, fyId, companyId, "SHARE");
+        if (fyId === fiscalYearId) {
+          lockedTargetFY = locked;
+          assertFiscalPeriodAllowsMutation(locked, "DUPLICATE");
+        }
+      }
 
-    // Charger toutes les écritures validées de N-1 avec leurs lignes
-    const priorEntries = await prisma.journalEntry.findMany({
-      where: {
-        fiscalYearId: priorFiscalYear.id,
-        status: "VALIDATED",
-        // Exclure les éventuelles copies N-1 précédentes
-        NOT: { sourceModule: "PRIOR_YEAR_COPY" },
-      },
-      include: {
-        lines: { orderBy: { lineNumber: "asc" } },
-        journal: { select: { id: true, companyId: true } },
-      },
-      orderBy: [{ entryDate: "asc" }, { entryNumber: "asc" }],
-    });
-
-    if (priorEntries.length === 0) {
-      return NextResponse.json(
-        { error: "Aucune écriture validée dans l'exercice N-1" },
-        { status: 404 }
-      );
-    }
-
-    // Pour chaque écriture N-1, obtenir le prochain numéro dans le journal courant
-    // et créer la copie dans l'exercice courant
-    let duplicatedCount = 0;
-
-    for (const entry of priorEntries) {
-      // Obtenir le prochain numéro d'écriture pour ce journal dans l'exercice courant
-      const lastEntry = await prisma.journalEntry.findFirst({
-        where: { journalId: entry.journalId, fiscalYearId },
-        orderBy: { entryNumber: "desc" },
-        select: { entryNumber: true },
-      });
-      const nextEntryNumber = (lastEntry?.entryNumber ?? 0) + 1;
-
-      // Décaler la date d'un an en avant pour qu'elle tombe dans l'exercice courant
-      const originalDate = new Date(entry.entryDate);
-      const shiftedDate = new Date(originalDate);
-      shiftedDate.setFullYear(shiftedDate.getFullYear() + 1);
-
-      // Si la date décalée dépasse la fin de l'exercice courant, utiliser le dernier jour
-      const targetDate =
-        shiftedDate <= currentFiscalYear.endDate ? shiftedDate : currentFiscalYear.endDate;
-
-      await prisma.journalEntry.create({
-        data: {
-          fiscalYearId,
-          journalId: entry.journalId,
-          entryNumber: nextEntryNumber,
-          entryDate: targetDate,
-          reference: entry.reference,
-          description: `[N-1] ${entry.description}`,
-          piece: entry.piece,
+      // Load validated N-1 entries inside transaction under lock
+      // Exclude reversed and reversal entries to prevent copying cancelled transactions
+      const priorEntries = await tx.journalEntry.findMany({
+        where: {
+          fiscalYearId: priorFiscalYear.id,
           status: "VALIDATED",
-          totalDebit: entry.totalDebit,
-          totalCredit: entry.totalCredit,
-          origin: "AUTO",
+          isReversed: false,
+          isReversal: false,
+          NOT: { sourceModule: "PRIOR_YEAR_COPY" },
+        },
+        include: {
+          lines: { orderBy: { lineNumber: "asc" } },
+          journal: { select: { id: true, companyId: true } },
+        },
+        orderBy: [{ entryDate: "asc" }, { entryNumber: "asc" }],
+      });
+
+      if (priorEntries.length === 0) {
+        throw new AccountingError("Aucune écriture validée dans l'exercice N-1", 404);
+      }
+
+      // Lock Order Step 2: Lock distinct journals in ascending sorted order
+      const distinctJournalIds = Array.from(new Set(priorEntries.map((e) => e.journalId))).sort();
+      await lockJournalsInOrder(tx, distinctJournalIds, companyId);
+
+      // Verify duplication has not already occurred under lock
+      const alreadyDuplicated = await tx.journalEntry.count({
+        where: {
+          fiscalYearId,
           sourceModule: "PRIOR_YEAR_COPY",
-          sourceId: entry.id,
-          createdById: user.id,
-          lines: {
-            create: entry.lines.map((line) => ({
-              lineNumber: line.lineNumber,
-              accountCode: line.accountCode,
-              companyId,
-              label: line.label,
-              debit: line.debit,
-              credit: line.credit,
-              tiersName: line.tiersName,
-              tiersReference: line.tiersReference,
-              dueDate: line.dueDate,
-            })),
+        },
+      });
+      if (alreadyDuplicated > 0) {
+        throw new AccountingError(
+          `La duplication N-1 a déjà été effectuée (${alreadyDuplicated} écriture(s) existantes). Supprimez-les d'abord si vous souhaitez recommencer.`,
+          409
+        );
+      }
+
+      let duplicatedCount = 0;
+
+      for (const entry of priorEntries) {
+        const nextEntryNumber = await allocateNextEntryNumber(tx, entry.journalId, fiscalYearId);
+
+        const originalDate = new Date(entry.entryDate);
+        const shiftedDate = new Date(originalDate);
+        shiftedDate.setFullYear(shiftedDate.getFullYear() + 1);
+
+        const targetEndDate = lockedTargetFY?.endDate ?? currentFiscalYear.endDate;
+        const targetDate =
+          shiftedDate <= targetEndDate ? shiftedDate : targetEndDate;
+
+        await tx.journalEntry.create({
+          data: {
+            fiscalYearId,
+            journalId: entry.journalId,
+            entryNumber: nextEntryNumber,
+            entryDate: targetDate,
+            reference: entry.reference,
+            description: `[N-1] ${entry.description}`,
+            piece: entry.piece,
+            status: "VALIDATED",
+            totalDebit: entry.totalDebit,
+            totalCredit: entry.totalCredit,
+            origin: "AUTO",
+            sourceModule: "PRIOR_YEAR_COPY",
+            sourceId: entry.id,
+            createdById: user.id,
+            lines: {
+              create: entry.lines.map((line) => ({
+                lineNumber: line.lineNumber,
+                accountCode: line.accountCode,
+                companyId,
+                label: line.label,
+                debit: line.debit,
+                credit: line.credit,
+                tiersName: line.tiersName,
+                tiersReference: line.tiersReference,
+                dueDate: line.dueDate,
+              })),
+            },
           },
+        });
+
+        duplicatedCount++;
+      }
+
+      const resData = {
+        success: true,
+        priorFiscalYearLabel: priorFiscalYear.label,
+        duplicatedCount,
+        message: `${duplicatedCount} écriture(s) N-1 copiées depuis l'exercice "${priorFiscalYear.label}"`,
+      };
+
+      // Record audit log
+      await recordAuditLog(tx, {
+        userId: user.id,
+        companyId,
+        action: "PRIOR_YEAR_ENTRIES_DUPLICATED",
+        entityType: "FiscalYear",
+        entityId: fiscalYearId,
+        details: {
+          duplicatedCount,
+          priorFiscalYearId: priorFiscalYear.id,
+          priorFiscalYearLabel: priorFiscalYear.label,
         },
       });
 
-      duplicatedCount++;
+      // Record Idempotency atomically
+      if (idempotencyKey) {
+        await recordIdempotency({
+          tx,
+          companyId,
+          key: idempotencyKey,
+          userId: user.id,
+          endpoint: "/api/entries/duplicate-prior-year",
+          requestHash,
+          statusCode: 200,
+          responseBody: resData,
+        });
+      }
+
+      return resData;
+    });
+
+    const responseHeaders: Record<string, string> = {};
+    if (idempotencyKey) {
+      responseHeaders["X-Idempotency-Key"] = idempotencyKey;
     }
 
-    return NextResponse.json({
-      success: true,
-      priorFiscalYearLabel: priorFiscalYear.label,
-      duplicatedCount,
-      message: `${duplicatedCount} écriture(s) N-1 copiées depuis l'exercice "${priorFiscalYear.label}"`,
-    });
+    return NextResponse.json(result, { status: 200, headers: responseHeaders });
   } catch (error) {
+    if (error instanceof AccountingError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
     console.error("Erreur duplication N-1:", error);
     return NextResponse.json({ error: "Erreur interne du serveur" }, { status: 500 });
   }
 }
+

@@ -75,6 +75,7 @@ model Company {
   userCompanyAccess UserCompanyAccess[]
   agentRuns         AgentRun[]
   suggestions       Suggestion[]
+  idempotencyKeys   IdempotencyKey[]
 
   @@index([organizationId])
 }
@@ -1116,4 +1117,26 @@ model ApprovalDecision {
   @@index([documentId])
   @@index([tenantId])
   @@index([decidedById])
+}
+
+// ═══════════════════════════════════════
+// IDEMPOTENCY KEYS (FINANCIAL MUTATIONS)
+// ═══════════════════════════════════════
+
+model IdempotencyKey {
+  id           String   @id @default(cuid())
+  companyId    String
+  key          String
+  userId       String
+  endpoint     String
+  requestHash  String
+  statusCode   Int
+  responseBody Json
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, key])
+  @@index([companyId, expiresAt])
 }

@@ -29,14 +29,17 @@ export async function GET(request: NextRequest) {
 
   const startDate = startDateStr ? new Date(startDateStr) : undefined;
   const endDate = endDateStr ? new Date(endDateStr) : undefined;
-  const statusFilter = (status === "DRAFT" || status === "VALIDATED") ? status : undefined;
+  const includePriorYear = params.get("includePriorYear") === "true";
+  const includeDrafts = params.get("includeDrafts") === "true" || status === "all";
+  const statusFilter = status === "DRAFT" ? "DRAFT" : includeDrafts ? "ALL" : "VALIDATED";
 
   const result = await computeTrialBalance(
     companyId,
     fiscalYearId,
     startDate,
     endDate,
-    statusFilter
+    statusFilter,
+    includePriorYear
   );
 
   const accounts = result.accounts.map(acc => ({

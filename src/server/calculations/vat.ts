@@ -44,7 +44,8 @@ export async function computeVATDeclaration(
       journalEntry: {
         fiscalYearId,
         journal: { companyId },
-        status: "VALIDATED",
+        status: { in: ["VALIDATED", "REVERSED"] },
+        NOT: { sourceModule: "PRIOR_YEAR_COPY" },
         entryDate: { gte: startDate, lte: endDate },
       },
     },

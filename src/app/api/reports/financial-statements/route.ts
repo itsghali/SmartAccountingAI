@@ -30,6 +30,8 @@ export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const companyId = params.get("companyId");
   const fiscalYearId = params.get("fiscalYearId");
+  const includeDrafts = params.get("includeDrafts") === "true";
+  const includePriorYear = params.get("includePriorYear") === "true";
 
   if (!companyId || !fiscalYearId) {
     return NextResponse.json(
@@ -48,7 +50,10 @@ export async function GET(request: NextRequest) {
       journalEntry: {
         fiscalYearId,
         journal: { companyId },
-        status: { in: ["DRAFT", "VALIDATED"] },
+        status: includeDrafts
+          ? { in: ["DRAFT", "VALIDATED", "REVERSED"] }
+          : { in: ["VALIDATED", "REVERSED"] },
+        ...(!includePriorYear ? { NOT: { sourceModule: "PRIOR_YEAR_COPY" } } : {}),
       },
     },
     select: {

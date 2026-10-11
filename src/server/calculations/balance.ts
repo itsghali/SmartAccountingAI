@@ -25,8 +25,19 @@ export async function computeTrialBalance(
   fiscalYearId: string,
   startDate?: Date,
   endDate?: Date,
-  statusFilter?: "VALIDATED" | "DRAFT" | undefined
+  statusFilter?: "VALIDATED" | "DRAFT" | "ALL" | undefined,
+  includePriorYearCopy: boolean = false
 ): Promise<TrialBalanceResult> {
+  let statusCondition: Prisma.EnumEntryStatusFilter | { in: ("VALIDATED" | "REVERSED")[] } | "DRAFT" | undefined;
+  if (statusFilter === "DRAFT") {
+    statusCondition = "DRAFT";
+  } else if (statusFilter === "ALL") {
+    statusCondition = undefined;
+  } else {
+    // Default or "VALIDATED": include all finalized/committed entries
+    statusCondition = { in: ["VALIDATED", "REVERSED"] };
+  }
+
   const whereClause: Prisma.JournalEntryLineWhereInput = {
     journalEntry: {
       fiscalYearId,
@@ -34,7 +45,8 @@ export async function computeTrialBalance(
       ...(startDate && endDate
         ? { entryDate: { gte: startDate, lte: endDate } }
         : {}),
-      ...(statusFilter ? { status: statusFilter } : {}),
+      ...(statusCondition ? { status: statusCondition } : {}),
+      ...(!includePriorYearCopy ? { NOT: { sourceModule: "PRIOR_YEAR_COPY" } } : {}),
     },
     companyId,
   };

@@ -47,6 +47,9 @@ export async function GET(request: NextRequest) {
     },
   });
 
+  const includeDrafts = request.nextUrl.searchParams.get("includeDrafts") === "true";
+  const includePriorYear = request.nextUrl.searchParams.get("includePriorYear") === "true";
+
   // ── Monthly VAT from journal lines ──────────────────────────────────────────
   // TVA collectée = accounts 4455x (credit > debit)
   // TVA déductible = accounts 3455x (debit > credit)
@@ -56,7 +59,10 @@ export async function GET(request: NextRequest) {
       journalEntry: {
         fiscalYearId,
         journal: { companyId },
-        status: { in: ["DRAFT", "VALIDATED"] },
+        status: includeDrafts
+          ? { in: ["DRAFT", "VALIDATED", "REVERSED"] }
+          : { in: ["VALIDATED", "REVERSED"] },
+        ...(!includePriorYear ? { NOT: { sourceModule: "PRIOR_YEAR_COPY" } } : {}),
       },
       OR: [
         { accountCode: { startsWith: "4455" } },

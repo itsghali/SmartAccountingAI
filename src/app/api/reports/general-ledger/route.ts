@@ -29,11 +29,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden: No access to reports" }, { status: 403 });
   }
 
+  const includeDrafts = params.get("includeDrafts") === "true";
+  const includePriorYear = params.get("includePriorYear") === "true";
+
   // Build where clause
   const journalEntryWhere: Prisma.JournalEntryWhereInput = {
     fiscalYearId,
     journal: { companyId },
-    status: { in: ["DRAFT", "VALIDATED"] },
+    status: includeDrafts
+      ? { in: ["DRAFT", "VALIDATED", "REVERSED"] }
+      : { in: ["VALIDATED", "REVERSED"] },
+    ...(!includePriorYear ? { NOT: { sourceModule: "PRIOR_YEAR_COPY" } } : {}),
     ...(startDate || endDate
       ? {
           entryDate: {
