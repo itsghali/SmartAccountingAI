@@ -232,7 +232,7 @@ src/
 | Variable | Required | Description |
 |---|---|---|
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `NEXTAUTH_SECRET` | Yes | Random string used to sign JWT tokens (min 32 chars) |
+| `AUTH_SECRET` | Yes | Random cryptographic secret used to sign JWT tokens and encrypt sessions (min 32 chars). Supports `NEXTAUTH_SECRET` as legacy fallback. |
 | `NEXTAUTH_URL` | Yes | Canonical URL of the application |
 | `GROQ_API_KEY` | No | Groq Console API key; enables Groq-backed agent execution and is the preferred provider when configured |
 | `GROQ_MODEL` | No | Groq model identifier; defaults to `openai/gpt-oss-120b` |

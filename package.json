@@ -15,6 +15,7 @@
     "coverage": "vitest run --coverage --reporter=basic",
     "compose:validate": "powershell -NoProfile -File scripts/validate-compose.ps1 -FilePath docker-compose.yml",
     "compose:validate:prod": "powershell -NoProfile -File scripts/validate-compose.ps1 -FilePath docker-compose.prod.yml",
+    "release:check": "node scripts/release-freeze-guard.js --verify-policy",
     "audit:dependencies": "npm audit --audit-level=high",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",

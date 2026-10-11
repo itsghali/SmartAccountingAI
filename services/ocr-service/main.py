@@ -3,6 +3,7 @@ import base64
 import logging
 import numpy as np
 import cv2
+import threading
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from doctr.models import ocr_predictor
@@ -12,14 +13,38 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="docTR OCR Microservice")
 
-# Initialize the docTR model at startup (keeps it in memory for fast inference)
-# Using lightweight models for speed on CPU
-logger.info("Loading docTR models (this may take a moment on CPU)...")
-predictor = ocr_predictor(det_arch='db_resnet50', reco_arch='crnn_vgg16_bn', pretrained=True)
-logger.info("docTR models loaded successfully.")
-
-# Track readiness — model is loaded but we warm it up on startup
+# Global model state
+predictor = None
 _model_ready = False
+_model_init_error: str | None = None
+_init_lock = threading.Lock()
+
+def initialize_and_warmup():
+    """Load docTR models and execute warmup inference. Keeps service non-ready if anything fails."""
+    global predictor, _model_ready, _model_init_error
+    with _init_lock:
+        if _model_ready:
+            return
+        try:
+            logger.info("Loading docTR models (this may take a moment on CPU)...")
+            loaded_predictor = ocr_predictor(det_arch='db_resnet50', reco_arch='crnn_vgg16_bn', pretrained=True)
+            logger.info("docTR models loaded. Warming up with dummy inference...")
+            dummy_img = np.ones((100, 100, 3), dtype=np.uint8) * 255
+            loaded_predictor([dummy_img])
+            predictor = loaded_predictor
+            _model_ready = True
+            _model_init_error = None
+            logger.info("Model warmup complete — ready to serve requests.")
+        except Exception as e:
+            logger.error(f"Model initialization or warmup failed: {e}", exc_info=True)
+            _model_ready = False
+            _model_init_error = str(e)
+
+@app.on_event("startup")
+def startup_event():
+    """Start model initialization and warmup in background thread so FastAPI listens immediately for healthchecks."""
+    t = threading.Thread(target=initialize_and_warmup, daemon=True, name="OCR-Initializer")
+    t.start()
 
 class OCRRequest(BaseModel):
     image_base64: str
@@ -27,21 +52,6 @@ class OCRRequest(BaseModel):
 class OCRResponse(BaseModel):
     raw_text: str
     pages: int
-
-@app.on_event("startup")
-def warmup_model():
-    """Run a dummy inference to warm up the model and pre-compile everything."""
-    global _model_ready
-    try:
-        logger.info("Warming up docTR model with dummy inference...")
-        # Create a small dummy image (100x100 white image)
-        dummy_img = np.ones((100, 100, 3), dtype=np.uint8) * 255
-        predictor([dummy_img])
-        _model_ready = True
-        logger.info("Model warmup complete — ready to serve requests.")
-    except Exception as e:
-        logger.error(f"Model warmup failed: {e}")
-        _model_ready = True  # Still mark ready, first real request will be slower
 
 @app.post("/extract", response_model=OCRResponse)
 def extract_text(request: OCRRequest):
@@ -52,6 +62,11 @@ def extract_text(request: OCRRequest):
     docTR inference is CPU-bound and would block the async event loop.
     FastAPI runs sync endpoints in a threadpool, keeping the server responsive.
     """
+    if not _model_ready or predictor is None:
+        if _model_init_error:
+            raise HTTPException(status_code=503, detail=f"OCR model initialization failed: {_model_init_error}")
+        raise HTTPException(status_code=503, detail="OCR service is still initializing")
+
     try:
         # Decode base64 image
         image_data = base64.b64decode(request.image_base64)
@@ -104,6 +119,8 @@ def extract_text(request: OCRRequest):
 def health_check():
     """Health check endpoint — returns healthy only after model is loaded and warmed up."""
     if not _model_ready:
+        if _model_init_error:
+            raise HTTPException(status_code=503, detail=f"Model initialization failed: {_model_init_error}")
         raise HTTPException(status_code=503, detail="Model still loading")
     return {"status": "ok", "model": "loaded"}
 

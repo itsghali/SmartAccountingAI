@@ -1,9 +1,18 @@
 @echo off
-echo Starting SmartAccountingAI...
-docker-compose -f docker-compose.prod.yml up -d --build
+echo Checking Sprint 0.1 deployment and release freeze status...
+node scripts/release-freeze-guard.js
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo [BLOCKED] Production deployment halted by release freeze policy.
+    pause
+    exit /b 1
+)
+
+echo Starting SmartAccountingAI Production Stack...
+docker compose -f docker-compose.prod.yml up -d --build
 echo.
-echo Application is starting. Please wait for the database and web server to initialize.
-echo Once running, the application will be available at http://localhost:3000
+echo Application is starting. Waiting for health checks to pass.
+echo Available at http://localhost:3000 once healthy.
 echo.
-echo To view logs, run: docker-compose -f docker-compose.prod.yml logs -f app
+echo To view logs: docker compose -f docker-compose.prod.yml logs -f nextjs
 pause

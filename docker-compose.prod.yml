@@ -26,6 +26,11 @@ services:
       - SRH_CONNECTION_STRING=redis://redis:6379
     networks:
       - backend_net
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "80"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
       redis:
         condition: service_healthy
@@ -48,7 +53,7 @@ services:
     volumes:
       - postgres_data_prod:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-smartaccountingai}"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -89,7 +94,7 @@ services:
       postgres:
         condition: service_healthy
       redis-http-proxy:
-        condition: service_started
+        condition: service_healthy
       ocr-service:
         condition: service_healthy
 
@@ -107,7 +112,7 @@ services:
           cpus: '1.5'
           memory: 2.5G
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').getcode() == 200 else 1)\" || exit 1"]
+      test: ["CMD-SHELL", "python /app/healthcheck.py || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 6

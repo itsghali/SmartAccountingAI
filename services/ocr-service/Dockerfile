@@ -31,6 +31,10 @@ COPY . .
 # Expose port
 EXPOSE 8000
 
+# Container healthcheck
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=6 \
+    CMD python healthcheck.py || exit 1
+
 # Start FastAPI server with 2 workers for concurrent request handling
 # Timeout set to 300s to handle slow CPU inference without killing workers
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--timeout-keep-alive", "300"]
